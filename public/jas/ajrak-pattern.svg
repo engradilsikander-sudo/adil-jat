@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="192" height="192" viewBox="0 0 192 192">
+  <title>Ajrak-inspired geometric floral repeat</title>
+  <defs>
+    <g id="flower">
+      <path fill="#28365e" d="M0-42 10-25 30-30 25-10 42 0 25 10 30 30 10 25 0 42-10 25-30 30-25 10-42 0-25-10-30-30-10-25Z"/>
+      <path fill="#f8f5ed" d="M0-32 8-19 23-23 19-8 32 0 19 8 23 23 8 19 0 32-8 19-23 23-19 8-32 0-19-8-23-23-8-19Z"/>
+      <path fill="#853448" d="M0-25 7-15 18-18 15-7 25 0 15 7 18 18 7 15 0 25-7 15-18 18-15 7-25 0-15-7-18-18-7-15Z"/>
+      <path fill="#f8f5ed" d="m0-12 12 12L0 12-12 0Z"/>
+      <circle r="5" fill="#28365e"/>
+    </g>
+    <g id="diamond">
+      <path d="m0-15 15 15L0 15-15 0Z" fill="#853448"/>
+      <path d="m0-9 9 9L0 9-9 0Z" fill="#f8f5ed"/>
+      <circle r="3" fill="#28365e"/>
+    </g>
+  </defs>
+  <path d="M-96 96 0 0l192 192M0 192 192 0M96-96 288 96M-96 96 96 288" fill="none" stroke="#853448" stroke-width="5"/>
+  <path d="M-96 96 0 0l192 192M0 192 192 0M96-96 288 96M-96 96 96 288" fill="none" stroke="#f8f5ed" stroke-width="1.5" stroke-dasharray="2 5"/>
+  <use href="#flower" x="96" y="96"/>
+  <use href="#flower" x="0" y="0"/><use href="#flower" x="192" y="0"/>
+  <use href="#flower" x="0" y="192"/><use href="#flower" x="192" y="192"/>
+  <use href="#diamond" x="96" y="0"/><use href="#diamond" x="96" y="192"/>
+  <use href="#diamond" x="0" y="96"/><use href="#diamond" x="192" y="96"/>
+  <g fill="#28365e">
+    <circle cx="48" cy="32" r="2"/><circle cx="32" cy="48" r="2"/>
+    <circle cx="144" cy="32" r="2"/><circle cx="160" cy="48" r="2"/>
+    <circle cx="48" cy="160" r="2"/><circle cx="32" cy="144" r="2"/>
+    <circle cx="144" cy="160" r="2"/><circle cx="160" cy="144" r="2"/>
+  </g>
+</svg>

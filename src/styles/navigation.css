@@ -1,0 +1,82 @@
+/* Internal-site navigation. Separate class names keep legacy header rules out. */
+.jas-header { position: sticky; top: 0; z-index: 80; background: #fff; border-bottom: 1px solid #e3eaf2; color: #142d4e; transition: box-shadow .18s ease; }
+.jas-header.has-shadow { box-shadow: 0 5px 22px rgba(20,45,78,.07); }
+.jas-header-inner { position: relative; width: min(1480px,calc(100% - 48px)); height: 76px; margin-inline: auto; display: flex; align-items: center; gap: 28px; }
+.jas-nav-brand { display: flex; align-items: center; gap: 11px; flex-shrink: 0; text-decoration: none; min-width: 0; }
+.jas-nav-brand img { flex-shrink: 0; width: 46px; height: 46px; border-radius: 50%; object-fit: contain; }
+.jas-nav-brand > span { min-width: 0; }
+.jas-nav-brand strong { display: block; font-size: 19px; font-weight: 750; letter-spacing: -.035em; line-height: 1.3; }
+.jas-nav-brand small { display: block; margin-top: 4px; font-size: 10px; color: #52647b; letter-spacing: .035em; line-height: 1.4; }
+.jas-desktop-nav { display: flex; align-items: center; justify-content: center; gap: 19px; margin-inline-start: auto; }
+.jas-nav-link { position: relative; display: inline-flex; align-items: center; gap: 5px; padding: 12px 0; min-height: 44px; border: 0; background: transparent; color: #52647b; font-size: 14px; font-weight: 650; white-space: nowrap; text-decoration: none; }
+.jas-nav-link:hover, .jas-nav-link.is-active, .jas-nav-link[aria-expanded='true'] { color: #142d4e; }
+.jas-desktop-nav .jas-nav-link.is-active::after, .jas-desktop-nav .jas-nav-link[aria-expanded='true']::after { content: ''; position: absolute; inset-inline: 0; bottom: 5px; height: 2px; background: #087f8c; }
+.jas-header-actions { display: flex; align-items: center; gap: 12px; }
+.jas-language, .jas-account { position: relative; }
+.jas-language-trigger { display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; padding: 0 5px; border: 0; border-radius: 8px; background: transparent; color: #142d4e; font-size: 13px; font-weight: 700; }
+.jas-language-trigger:hover { background: #eef7f8; }
+.jas-nav-cta { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 44px; padding: 10px 17px; border-radius: 10px; background: #087f8c; color: white; font-size: 14px; font-weight: 700; white-space: nowrap; text-decoration: none; }
+.jas-nav-cta:hover { background: #066875; }
+.jas-auth-links { display: flex; align-items: center; gap: 14px; }
+.jas-avatar { position: relative; display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border: 1px solid #cfdee9; border-radius: 50%; background: #142d4e; color: white; font-size: 15px; font-weight: 700; }
+.jas-avatar-count, .jas-count { display: inline-flex; align-items: center; justify-content: center; background: #c8102e; color: white; min-width: 20px; padding: 2px 5px; border-radius: 12px; font-size: 10px; font-weight: 700; line-height: 1.4; }
+.jas-avatar-count { position: absolute; top: -5px; inset-inline-end: -5px; border: 2px solid white; }
+.jas-auth-loading { width: 44px; height: 44px; border-radius: 50%; background: #edf2f7; }
+.jas-popover { background: #fff; border: 1px solid #dce5ef; border-radius: 14px; box-shadow: 0 16px 40px rgba(20,45,78,.12); }
+.jas-mega-menu { position: absolute; top: calc(100% + 9px); inset-inline-end: 0; width: min(740px,calc(100vw - 48px)); padding: 22px 16px; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 16px; max-height: calc(100dvh - 100px); overflow-y: auto; overscroll-behavior: contain; }
+.jas-program-menu { grid-template-columns: repeat(2,minmax(0,1fr)); width: min(600px,calc(100vw - 48px)); }
+.jas-mega-menu h2, .jas-drawer-panel h2 { margin: 0 0 9px; padding-inline: 9px; font-size: 11px; letter-spacing: .09em; text-transform: uppercase; font-weight: 700; color: #08717c; }
+.jas-menu-link { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 10px 9px; border-radius: 9px; text-decoration: none; color: #142d4e; }
+.jas-menu-link:hover, .jas-menu-link.is-active { background: #edf7f8; }
+.jas-menu-icon { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0; color: #08717c; background: #f1f7f9; }
+.jas-menu-copy { flex: 1; min-width: 0; }
+.jas-menu-copy strong { display: block; font-size: 13px; font-weight: 650; line-height: 1.4; }
+.jas-menu-copy small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #64748b; font-size: 11px; line-height: 1.5; margin-top: 3px; }
+.jas-language-options { position: absolute; top: calc(100% + 12px); inset-inline-end: 0; width: 166px; padding: 6px; }
+.jas-language-option { display: flex; align-items: center; justify-content: space-between; gap: 10px; width: 100%; min-height: 44px; border: 0; border-radius: 8px; background: transparent; padding: 9px 12px; font-size: 14px; color: #142d4e; text-align: start; }
+.jas-language-option:hover, .jas-language-option[aria-pressed='true'] { background: #eaf6f7; color: #066875; }
+.jas-account-panel { position: absolute; top: calc(100% + 16px); inset-inline-end: 0; width: 294px; padding: 8px; max-height: calc(100dvh - 110px); overflow-y: auto; overscroll-behavior: contain; }
+.jas-profile-summary { padding: 12px 11px 15px; border-bottom: 1px solid #e3eaf2; margin-bottom: 6px; overflow-wrap: anywhere; }
+.jas-profile-summary strong { display: block; font-size: 15px; line-height: 1.5; font-weight: 700; }
+.jas-profile-summary span { display: block; font-size: 12px; margin-top: 4px; color: #52647b; }
+.jas-profile-summary small { display: inline-block; margin-top: 7px; color: #08717c; font-size: 11px; font-weight: 650; }
+.jas-nav-logout { display: flex; align-items: center; justify-content: center; gap: 9px; width: 100%; margin-top: 8px; min-height: 44px; padding: 10px; border: 1px solid #f5dce1; border-radius: 9px; background: #fff6f7; color: #b30d28; font-size: 14px; font-weight: 650; }
+.jas-nav-logout:disabled { opacity: .55; cursor: wait; }
+.jas-mobile-toggle, .jas-close { align-items: center; justify-content: center; width: 44px; height: 44px; flex-shrink: 0; border: 1px solid #dce5ef; border-radius: 10px; background: white; color: #142d4e; }
+.jas-mobile-toggle { display: none; }
+.jas-close { display: flex; }
+.jas-nav-dialog { position: fixed; inset: 0; width: 100%; max-width: none; height: 100dvh; max-height: none; margin: 0; padding: 0; border: 0; background: transparent; color: #142d4e; }
+.jas-nav-dialog::backdrop { background: rgba(13,30,50,.48); }
+.jas-drawer-backdrop { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; background: transparent; }
+.jas-drawer-panel { position: absolute; inset-block: 0; inset-inline-end: 0; width: min(420px,100%); padding: 18px; background: #fff; overflow-y: auto; overscroll-behavior: contain; padding-bottom: max(24px,env(safe-area-inset-bottom)); }
+.jas-drawer-heading { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-bottom: 18px; border-bottom: 1px solid #e3eaf2; }
+.jas-drawer-links { display: grid; gap: 4px; padding-block: 14px; }
+.jas-drawer-links > .jas-nav-link, .jas-drawer-links summary { display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 10px; font-size: 15px; font-weight: 650; color: #142d4e; border-radius: 8px; cursor: pointer; list-style: none; }
+.jas-drawer-links summary::-webkit-details-marker { display: none; }
+.jas-drawer-links summary:hover, .jas-drawer-links > .is-active { background: #edf7f8; }
+.jas-drawer-links details[open] > summary svg { transform: rotate(180deg); }
+.jas-drawer-links details > div { padding: 10px 0 10px 8px; }
+.jas-drawer-links details section + section { margin-top: 14px; }
+.jas-drawer-languages { padding-block: 16px; border-block: 1px solid #e3eaf2; }
+.jas-drawer-account { margin-top: 10px; }
+.jas-drawer-auth { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 20px 10px; }
+.jas-header[dir='rtl'] .jas-nav-brand strong, .jas-header[dir='rtl'] h2 { letter-spacing: normal; }
+@media (max-width: 1279px) {
+  .jas-header-inner { width: calc(100% - 32px); gap: 12px; }
+  .jas-desktop-nav, .jas-desktop-control, .jas-mega-menu { display: none; }
+  .jas-header-actions { margin-inline-start: auto; gap: 9px; }
+  .jas-mobile-toggle { display: flex; }
+  .jas-account-panel { position: fixed; top: 84px; inset-inline-end: 16px; width: min(294px,calc(100vw - 32px)); }
+}
+@media (max-width: 479px) {
+  .jas-header-inner { width: calc(100% - 24px); gap: 8px; }
+  .jas-nav-brand { gap: 8px; flex-shrink: 1; }
+  .jas-nav-brand img { width: 38px; height: 38px; }
+  .jas-nav-brand strong { font-size: 15px; letter-spacing: -.035em; }
+  .jas-nav-brand small { font-size: 8px; letter-spacing: 0; }
+  .jas-header-actions { gap: 6px; }
+  .jas-avatar, .jas-mobile-toggle { width: 40px; height: 40px; }
+  .jas-drawer-panel { padding-inline: 14px; }
+}
+@media (prefers-reduced-motion: reduce) { .jas-header { transition: none; } }
+@media print { .jas-header { display: none; } }

@@ -1,0 +1,61 @@
+/* Scoped touch, keyboard and mixed-script refinements. */
+.jas-header :is(a, button, summary):focus-visible,
+.reg-page :is(a, button, input, select, textarea):focus-visible {
+  outline: 3px solid #087f8c;
+  outline-offset: 3px;
+}
+.jas-profile-summary [dir="ltr"] {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: start;
+}
+.reg-page :is(input, select)[dir="ltr"] {
+  direction: ltr;
+  text-align: left;
+  unicode-bidi: isolate;
+}
+.reg-page :is(input, select, textarea) { scroll-margin-block: 100px 24px; }
+.jas-header[dir="rtl"] .jas-nav-link,
+.jas-header[dir="rtl"] .jas-menu-copy,
+.jas-header[dir="rtl"] .jas-language-option { letter-spacing: normal; line-height: 1.8; }
+@media (max-width: 1279px) {
+  .jas-drawer-links .jas-menu-copy small {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    font-size: 12px;
+  }
+  .jas-drawer-links > .jas-nav-link,
+  .jas-drawer-links summary,
+  .jas-drawer-auth .jas-nav-link,
+  .jas-drawer-auth .jas-nav-cta {
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: start;
+  }
+  .jas-drawer-links details > div { padding-inline: 8px 0; }
+  .jas-drawer-panel { padding-top: max(18px, env(safe-area-inset-top)); }
+  .jas-account-panel {
+    position: absolute;
+    top: calc(100% + 12px);
+    inset-inline-end: 0;
+    max-height: calc(100dvh - 130px);
+  }
+}
+@media (max-width: 767px) {
+  .reg-page :is(.reg-input, .reg-select, textarea) { font-size: 16px; }
+  .reg-page :is(.reg-btn-primary, .reg-btn-secondary, .reg-btn-soft, .reg-upload-btn) {
+    min-height: 44px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .reg-page .reg-actions { padding-bottom: max(16px, env(safe-area-inset-bottom)); }
+}
+@media (max-width: 479px) {
+  .jas-header-inner { height: auto; min-height: 76px; padding-block: 10px; }
+  .jas-header-actions { flex-shrink: 0; }
+  .jas-avatar, .jas-mobile-toggle { width: 44px; height: 44px; }
+  .jas-nav-brand strong { overflow-wrap: anywhere; }
+  .jas-nav-brand small { line-height: 1.5; }
+}

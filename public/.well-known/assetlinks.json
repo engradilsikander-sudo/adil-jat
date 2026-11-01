@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "org.jasofficial.twa",
+        "sha256_cert_fingerprints": ["DE:91:4D:C5:4C:EB:02:E7:4C:66:7B:E9:A5:51:CD:4F:AC:80:B3:E9:1E:EB:8C:18:C3:B1:90:2A:A1:AE:EB:7D"]
+      }
+    }]

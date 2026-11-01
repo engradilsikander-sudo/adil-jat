@@ -1,0 +1,75 @@
+# Dependencies
+node_modules/
+
+# OS/editor noise
+.DS_Store
+
+# Local environment and secrets
+.env
+.env.local
+.env.production
+.env.development
+.env.test
+.env.preview
+.env.staging
+.env.*.local
+*.local
+
+# Build/runtime output
+dist/
+dist-ssr/
+.output/
+.nitro/
+.tanstack/
+.wrangler/
+.vinxi/
+__unconfig*/
+
+# Local Supabase temp/cache
+supabase/.temp/
+supabase/.branches/
+supabase/snippets/
+
+# Local scratch/backups/exported archives
+backups/
+exports/
+*.log
+*.zip
+todos.json
+
+# Android / Play Store generated package outputs
+*.apk
+*.aab
+*.keystore
+signing-key-info.txt
+JAS-test.apk
+JAS.apk
+JAS.aab
+# Local platform/CI state
+.vercel/
+.netlify/
+.turbo/
+.cache/
+coverage/
+playwright-report/
+test-results/
+# Extra secret/key material
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+*.csr
+*.mobileprovision
+.env.backup
+.env.bak
+.env.local.*
+.env-safety-backups/
+.env-safety-backups/
+
+# Local design patch backups
+/.jas-design-backups/
+
+# Local release reports and backup exports
+release-reports/
+jas-backups/

@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#0b2a1d" />
+    <title>JAS Offline</title>
+    <style>
+      :root { color-scheme: light; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+      * { box-sizing: border-box; }
+      body { margin: 0; min-height: 100vh; min-height: 100dvh; display: grid; place-items: center; padding: calc(env(safe-area-inset-top) + 24px) 20px calc(env(safe-area-inset-bottom) + 24px); color: #141210; background: linear-gradient(180deg, #fbf9f4 0%, #f6f2e9 100%); }
+      .card { width: min(100%, 460px); border: 1px solid rgba(20,18,16,.1); border-radius: 32px; background: rgba(255,255,255,.9); padding: 28px; box-shadow: 0 24px 80px rgba(20,18,16,.11); }
+      .mark { display: inline-grid; place-items: center; width: 56px; height: 56px; border-radius: 18px; background: #eaf6ee; color: #1a4d2e; font-weight: 900; }
+      h1 { margin: 22px 0 10px; font-size: clamp(2rem, 10vw, 3.2rem); line-height: .98; letter-spacing: -.055em; }
+      p { margin: 0; color: #5c5448; font-size: 1rem; line-height: 1.75; }
+      button { margin-top: 24px; width: 100%; min-height: 52px; border: 0; border-radius: 18px; background: linear-gradient(135deg, #1a4d2e, #236638); color: white; font-weight: 900; font-size: 1rem; box-shadow: 0 14px 32px rgba(26,77,46,.2); }
+    </style>
+  </head>
+  <body>
+    <main class="card" role="main">
+      <div class="mark">JAS</div>
+      <h1>You are offline</h1>
+      <p>JAS membership, programs, finance and admin data need an internet connection. Please reconnect and try again.</p>
+      <button type="button" onclick="location.reload()">Retry connection</button>
+    </main>
+  </body>
+</html>

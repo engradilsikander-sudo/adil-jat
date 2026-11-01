@@ -1,0 +1,144 @@
+/* ─── Design Tokens ──────────────────────────────────── */
+:root {
+  --ink: #172b4d;
+  --ink-soft: #52647b;
+  --ink-muted: #687a90;
+
+  --forest: #087f8c;
+  --forest-mid: #076b76;
+  --forest-light: #0b8793;
+  --forest-dark: #142d4e;
+  --forest-deep: #10233e;
+  --forest-glow: rgba(26, 77, 46, 0.12);
+
+  --gold: #08717c;
+  --gold-light: #62c8d0;
+  --gold-bright: #bcebef;
+  --gold-pale: #e6f5f7;
+  --gold-glow: rgba(176, 125, 42, 0.18);
+
+  --teal: #087f8c;
+  --teal-soft: #e6f5f7;
+
+  --red: #c0392b;
+  --red-soft: #fdf2f2;
+
+  --amber: #b7791f;
+  --amber-soft: #fff8e5;
+
+  --parchment: #f4f7fb;
+  --paper: #ffffff;
+  --surface: #ffffff;
+
+  --line: rgba(20, 18, 16, 0.08);
+  --line-mid: rgba(20, 18, 16, 0.14);
+  --line-strong: rgba(20, 18, 16, 0.22);
+
+  --font-display: "Manrope", "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "Inter", ui-sans-serif, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --shadow-xs: 0 1px 3px rgba(20, 18, 16, 0.06);
+  --shadow-sm: 0 4px 16px rgba(20, 18, 16, 0.07);
+  --shadow-md: 0 12px 40px rgba(20, 18, 16, 0.09);
+  --shadow-lg: 0 24px 80px rgba(20, 18, 16, 0.11);
+  --shadow-xl: 0 40px 100px rgba(20, 18, 16, 0.14);
+
+  --r-xs: 0.375rem;
+  --r-sm: 0.625rem;
+  --r-md: 1rem;
+  --r-lg: 1.5rem;
+  --r-xl: 2rem;
+  --r-2xl: 2.75rem;
+
+  --container: 1200px;
+}
+
+/* ─── Reset & Base ───────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  overflow-x: hidden;
+  scroll-behavior: smooth;
+  font-family: var(--font-body);
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0;
+  color: var(--ink);
+  background-color: var(--parchment);
+  background-image: none;
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+select {
+  text-transform: none;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+img,
+svg,
+video,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+::selection {
+  color: white;
+  background: var(--forest);
+}
+
+:focus-visible {
+  outline: 3px solid rgba(201, 149, 47, 0.58);
+  outline-offset: 3px;
+}
+
+/* ─── Accessibility Helpers ──────────────────────────── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  white-space: nowrap;
+  border: 0;
+  clip: rect(0, 0, 0, 0);
+}
+
+.line-clamp-4 {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
