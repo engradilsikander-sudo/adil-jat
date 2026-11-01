@@ -268,7 +268,7 @@ async function fetchActiveMemberDesignation(
 }
 
 export const verifyMemberAction = createServerFn({ method: 'POST' })
-  .inputValidator(validateVerifyInput)
+  .validator(validateVerifyInput)
   .handler(async ({ data }): Promise<VerifyMemberResult> => {
     try {
     const supabaseAdmin = await enforceVerificationBudget(data.memberNo)

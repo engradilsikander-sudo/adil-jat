@@ -1,3 +1,4 @@
+import { fetchAllRows } from './admin/data-access'
 import { supabase } from './supabase/client'
 
 export const committeeTypeOptions = [
@@ -225,10 +226,10 @@ async function getCurrentUserId() {
 }
 
 export async function fetchCommitteesForAdmin() {
-  const { data, error } = await supabase
+  const { data, error } = await fetchAllRows((from,to) => supabase
     .from('organization_committees' as never)
-    .select(committeeSelect)
-    .order('created_at', { ascending: false })
+    .select(committeeSelect, { count: 'exact' })
+    .order('created_at', { ascending: false }).order('id').range(from,to))
 
   if (error) throw error
 
@@ -236,17 +237,11 @@ export async function fetchCommitteesForAdmin() {
 
   if (!committees.length) return []
 
-  const { data: members, error: countError } = await supabase
+  const { data: members, error: countError } = await fetchAllRows((from,to) => supabase
     .from('organization_committee_members' as never)
-    .select('committee_id')
+    .select('committee_id', { count: 'exact' }).order('id').range(from,to))
 
-  if (countError) {
-    console.warn('Committee member count query failed:', countError)
-    return committees.map((committee) => ({
-      ...committee,
-      member_count: 0,
-    }))
-  }
+  if (countError) throw countError
 
   const counts = new Map<string, number>()
   ;((members ?? []) as unknown as Array<{ committee_id: string }>).forEach((item) => {
@@ -343,20 +338,15 @@ export async function fetchCommitteeDetails(id: string): Promise<CommitteeDetail
 }
 
 export async function fetchDesignations(scope?: DesignationScope) {
-  let query = supabase
-    .from('organization_designations' as never)
-    .select('id, scope, title, sort_order, is_active, created_at, updated_at')
-    .order('scope', { ascending: true })
-    .order('sort_order', { ascending: true })
-
-  if (scope) {
-    query = query.eq('scope' as never, scope as never)
-  }
-
-  const { data, error } = await query
-  if (error) throw error
-
-  return (data ?? []) as unknown as DesignationRecord[]
+  const { data,error } = await fetchAllRows((from,to) => {
+    let query=supabase.from('organization_designations' as never)
+      .select('id, scope, title, sort_order, is_active, created_at, updated_at', { count:'exact' })
+      .order('scope').order('sort_order').order('id').range(from,to)
+    if(scope) query=query.eq('scope',scope)
+    return query
+  })
+  if(error) throw error
+  return data as unknown as DesignationRecord[]
 }
 
 export async function createDesignation(input: {

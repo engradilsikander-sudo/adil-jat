@@ -1,3 +1,5 @@
+import { adminErrorMessage } from '../../lib/admin/data-access'
+import { LoadFailure } from '../../components/admin/LoadFailure'
 import { createFileRoute, Link, Outlet, useNavigate, useRouterState } from '@tanstack/react-router'
 import { AdminShell } from '../../components/admin/AdminShell'
 import { ArrowRight, CheckCircle2, Network, Plus, RefreshCw, Search, ShieldAlert } from 'lucide-react'
@@ -57,6 +59,7 @@ function AdminCommitteesPage() {
 
   const [committees, setCommittees] = useState<CommitteeRecord[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [search, setSearch] = useState('')
@@ -71,19 +74,20 @@ function AdminCommitteesPage() {
 
   async function loadCommittees() {
     setLoading(true)
-    setMessage('')
+    setLoadError('')
+    setLoadError('')
 
     try {
       const allowed = await currentUserCanManageCommittees()
       if (!allowed) {
-        setMessage('Only admin or super admin can manage organization levels and designations.')
+        setLoadError('Only admin or super admin can manage organization levels and designations.')
         setCommittees([])
         return
       }
 
       setCommittees(await fetchCommitteesForAdmin())
     } catch (err) {
-      setMessage(getErrorMessage(err, 'Failed to load organization level units. Please confirm the organization/designation migration and RLS grants are applied.'))
+      setLoadError(getErrorMessage(err, 'Failed to load organization level units. Please confirm the organization/designation migration and RLS grants are applied.'))
     } finally {
       setLoading(false)
     }
@@ -169,6 +173,9 @@ function AdminCommitteesPage() {
     return <Outlet />
   }
 
+  if (loadError) return <AdminShell title="Organization Levels"><LoadFailure error={new Error(loadError)} onRetry={() => void loadCommittees()} /></AdminShell>
+  if (loading) return <AdminShell title="Organization Levels"><p role="status">Loading records…</p></AdminShell>
+
   return (
     <AdminShell title="Organization Levels" subtitle="Manage level units used for designation assignment.">
       <div className="admin-nested-page">
@@ -200,7 +207,7 @@ function AdminCommitteesPage() {
           </div>
         </header>
 
-        <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-8">
+        <section className="admin-stat-grid">
           <SummaryCard label={copy.page.totalCommittees} value={stats.total} />
           <SummaryCard label={copy.page.central} value={stats.central} />
           <SummaryCard label={copy.page.centralAdvisory} value={stats.central_advisory} />
@@ -423,19 +430,7 @@ function SummaryCard({ label, value, tone = 'slate' }: { label: string; value: n
 }
 
 
-function getErrorMessage(err: unknown, fallback: string) {
-  if (err instanceof Error && err.message) return err.message
-
-  if (typeof err === 'object' && err !== null) {
-    const maybeError = err as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown }
-    const parts = [maybeError.message, maybeError.details, maybeError.hint, maybeError.code]
-      .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
-
-    if (parts.length > 0) return parts.join(' — ')
-  }
-
-  return fallback
-}
+function getErrorMessage(err: unknown, fallback: string) { return adminErrorMessage(err, fallback) }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (

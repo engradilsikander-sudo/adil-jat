@@ -78,7 +78,7 @@ export function sanitizePublicOfficeBearerRecord(
 }
 
 export const verifyOfficeBearerAction = createServerFn({ method: 'POST' })
-  .inputValidator((value: unknown) => normalizeOfficeBearerId(value))
+  .validator((value: unknown) => normalizeOfficeBearerId(value))
   .handler(async ({ data }): Promise<PublicOfficeBearerVerificationRecord | null> => {
     try {
       const client = await enforceVerificationBudget(data)

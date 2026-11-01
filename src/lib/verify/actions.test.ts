@@ -1,7 +1,7 @@
 import { expect, it, vi } from 'vitest'
 const budget = vi.hoisted(() => ({ allowed: true, error: null as null | { message: string } }))
 const calls = vi.hoisted(() => [] as Array<[string, ...unknown[]]>)
-vi.mock('@tanstack/react-start', () => ({ createServerFn: () => ({ inputValidator: () => ({ handler: (fn: unknown) => fn }) }) }))
+vi.mock('@tanstack/react-start', () => ({ createServerFn: () => ({ validator: () => ({ handler: (fn: unknown) => fn }) }) }))
 vi.mock('../supabase/admin', () => ({ createSupabaseAdminClient: () => ({
   rpc: async () => ({ data: budget.allowed, error: budget.error }),
   from: (table: string) => {

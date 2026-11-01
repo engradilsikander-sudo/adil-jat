@@ -19,6 +19,7 @@ export {
 export type MemberStatus = 'pending' | 'approved' | 'rejected'
 
 export type ExistingMember = {
+  membership_fee_required?: boolean
   id: string
   status: MemberStatus
   address: string | null

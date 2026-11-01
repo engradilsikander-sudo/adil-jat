@@ -295,7 +295,7 @@ function ReviewChecklist({ member }: { member: Member }) {
         <div className="flex items-start gap-3">
           <CreditCard className="mt-0.5 h-5 w-5 shrink-0" />
           <p>
-            Membership is free. No payment or receipt is required for approval.
+            For new applications, verify or waive the Rs. 500 membership fee before approval. Existing applications keep their original terms.
           </p>
         </div>
       </div>

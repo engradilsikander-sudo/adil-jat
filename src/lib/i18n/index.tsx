@@ -1,5 +1,6 @@
 import {
   createContext,
+  startTransition,
   useCallback,
   useContext,
   useEffect,
@@ -34,12 +35,14 @@ export function getLanguageDirection(language: AppLanguage) {
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<AppLanguage>(() => {
-    if (typeof window === 'undefined') return 'en'
-
-    const storedLanguage = window.localStorage.getItem(STORAGE_KEY)
-    return isAppLanguage(storedLanguage) ? storedLanguage : 'en'
-  })
+  // Match the server's first render; read browser preferences after hydration.
+  const [language, setLanguageState] = useState<AppLanguage>('en')
+  useEffect(() => {
+    try {
+      const storedLanguage=window.localStorage.getItem(STORAGE_KEY)
+      if(isAppLanguage(storedLanguage)) startTransition(() => setLanguageState(storedLanguage))
+    } catch { /* Browser storage may be disabled; language switching still works. */ }
+  }, [])
 
   const direction = getLanguageDirection(language)
 
@@ -47,7 +50,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     setLanguageState(nextLanguage)
 
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(STORAGE_KEY, nextLanguage)
+      try { window.localStorage.setItem(STORAGE_KEY, nextLanguage) } catch { /* Keep the session preference even if persistence is disabled. */ }
     }
   }, [])
 

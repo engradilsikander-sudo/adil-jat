@@ -245,7 +245,6 @@ type VerifyResult = {
   found: boolean
   verified: boolean
   member: {
-    id: string
     member_no: string | null
     full_name: string
     district: string

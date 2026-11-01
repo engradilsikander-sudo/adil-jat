@@ -1,3 +1,6 @@
+import { MembershipReceiptStep } from '../components/register/MembershipReceiptStep'
+import { MEMBERSHIP_RECEIPT_BUCKET, type MembershipPayment } from '../lib/membership-fee'
+import { adminErrorMessage } from '../lib/admin/data-access'
 import { createFileRoute, useBlocker, useNavigate } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
@@ -50,6 +53,9 @@ function RegisterPage() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [currentStep, setCurrentStep] = useState(0)
 
+  const [receipt, setReceipt] = useState<File | null>(null)
+  const [payment, setPayment] = useState<MembershipPayment | null>(null)
+  const [receiptPath, setReceiptPath] = useState('')
   const [photo, setPhoto] = useState<File | null>(null)
   const [photoPreview, setPhotoPreview] = useState<string | null>(null)
   const [existingPhotoSignedUrl, setExistingPhotoSignedUrl] = useState<string | null>(null)
@@ -62,13 +68,14 @@ function RegisterPage() {
   const submitted = useRef(false)
   const [draftSavedAt, setDraftSavedAt] = useState('')
 
+  const feeRequired = !existingMember || existingMember.membership_fee_required !== false || Boolean(payment)
   const locked = existingMember?.status === 'approved'
   const isPendingEdit = existingMember?.status === 'pending'
   const isRejected = existingMember?.status === 'rejected'
   const isLastStep = currentStep === registerFormSteps.length - 1
 
   const serializedForm = JSON.stringify(form)
-  const dirty = !loading && !locked && !submitted.current && (serializedForm !== savedForm || Boolean(photo))
+  const dirty = !loading && !locked && !submitted.current && (serializedForm !== savedForm || Boolean(photo) || Boolean(receipt))
   useBlocker({
     shouldBlockFn: () => dirty && !window.confirm(copy.leave),
     enableBeforeUnload: dirty,
@@ -138,6 +145,7 @@ function RegisterPage() {
       .select(
         [
           'id',
+          'membership_fee_required',
           'status',
           'address',
           'date_of_birth',
@@ -171,6 +179,9 @@ function RegisterPage() {
     const data = rawData as unknown as ExistingMember | null
 
     if (data) {
+      const result = await supabase.from('membership_payments').select('*').eq('member_id',data.id).maybeSingle()
+      if (result.error) { setError(adminErrorMessage(result.error)); setLoading(false); return }
+      setPayment(result.data as MembershipPayment | null)
       setExistingMember(data)
       setForm(memberToRegisterForm(data))
       setSavedForm(JSON.stringify(memberToRegisterForm(data)))
@@ -418,8 +429,21 @@ function RegisterPage() {
       return
     }
 
+    if (feeRequired && !receipt && !payment?.receipt_path && payment?.status !== 'paid' && payment?.status !== 'waived') {
+      setCurrentStep(registerFormSteps.length - 1)
+      setError(t('register.error.receiptRequired'))
+      return
+    }
     setSubmitting(true)
-
+    try {
+    let uploadedReceipt = receiptPath
+    if (receipt && !uploadedReceipt) {
+      const extension = ({ 'image/png':'png', 'image/jpeg':'jpg', 'image/webp':'webp', 'application/pdf':'pdf' } as Record<string,string>)[receipt.type]
+      uploadedReceipt = `${userId}/receipt-${crypto.randomUUID()}.${extension}`
+      const { error: receiptError } = await supabase.storage.from(MEMBERSHIP_RECEIPT_BUCKET).upload(uploadedReceipt,receipt,{ contentType:receipt.type,upsert:false })
+      if (receiptError) throw receiptError
+      setReceiptPath(uploadedReceipt)
+    }
     let photoPath = existingMember?.photo_url ?? ''
 
     if (photo) {
@@ -464,43 +488,11 @@ function RegisterPage() {
       photo_url: photoPath,
     }
 
-    if (existingMember) {
-      const updatePayload =
-        existingMember.status === 'rejected'
-          ? {
-              ...payload,
-              status: 'pending' as const,
-              rejection_reason: null,
-            }
-          : payload
-
-      const { error: updateError } = await supabase
-        .from('members')
-        .update(updatePayload)
-        .eq('id', existingMember.id)
-
-      if (updateError) {
-        setError(updateError.message)
-        setSubmitting(false)
-        return
-      }
-    } else {
-      const { error: insertError } = await supabase
-        .from('members')
-        .insert({
-          user_id: userId,
-          ...payload,
-          status: 'pending',
-        })
-        .select('id, user_id')
-        .single()
-
-      if (insertError) {
-        setError(insertError.message)
-        setSubmitting(false)
-        return
-      }
-    }
+    const { data: savedId, error: submitError } = await supabase.rpc('submit_membership_application_500', {
+      _payload: payload,
+      ...(uploadedReceipt ? { _receipt: { receipt_path: uploadedReceipt, receipt_file_name: receipt?.name || 'Receipt' } } : {}),
+    })
+    if (submitError || !savedId) throw submitError || new Error('Application was not saved. Please retry.')
 
     window.dispatchEvent(new CustomEvent('jas-membership-updated'))
     submitted.current = true
@@ -518,6 +510,8 @@ function RegisterPage() {
     window.setTimeout(() => {
       navigate({ to: '/dashboard' })
     }, 650)
+    } catch (error) { setError(adminErrorMessage(error, 'Application could not be saved. Please retry.')) }
+    finally { setSubmitting(false) }
   }
 
   function getDescriptionIds(field: FormField, hasHint = false) {
@@ -559,6 +553,8 @@ function RegisterPage() {
     }
 
     return (
+      <div className="space-y-5">
+      {feeRequired ? <MembershipReceiptStep file={receipt} payment={payment} disabled={locked || submitting} onChange={file => { setReceipt(file); setReceiptPath(''); setError('') }} onError={setError} /> : <p className="rounded-2xl bg-teal-50 p-4">Existing application: no new membership fee is due.</p>}
       <RegisterReviewStep
         title={currentStepData.title}
         description={currentStepData.description}
@@ -572,6 +568,7 @@ function RegisterPage() {
         handlePhotoChange={handlePhotoChange}
         getDescriptionIds={getDescriptionIds}
       />
+      </div>
     )
   }
 
@@ -618,7 +615,7 @@ function RegisterPage() {
 
             <p className="reg-subtitle">{t('register.subtitle')}</p>
 
-            <MembershipFeeSummary t={t} />
+            {!existingMember ? <MembershipFeeSummary t={t} /> : null}
 
             <div className="reg-title-line" />
           </div>

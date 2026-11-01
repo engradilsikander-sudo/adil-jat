@@ -558,6 +558,7 @@ export type Database = {
       }
       members: {
         Row: {
+          membership_fee_required: boolean
           address: string | null
           approved_at: string | null
           blood_group: string | null
@@ -588,6 +589,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          membership_fee_required?: boolean
           address?: string | null
           approved_at?: string | null
           blood_group?: string | null
@@ -618,6 +620,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          membership_fee_required?: boolean
           address?: string | null
           approved_at?: string | null
           blood_group?: string | null
@@ -1536,9 +1539,16 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      health_application_summaries: {
+        Row: Pick<Database['public']['Tables']['program_applications']['Row'], 'id' | 'application_no' | 'applicant_name' | 'membership_no' | 'relationship_to_member' | 'phone' | 'district' | 'taluka' | 'program_key' | 'status' | 'assigned_admin_id' | 'approved_amount' | 'submitted_at' | 'created_at' | 'details'>
+        Relationships: []
+      }
     }
     Functions: {
+      get_public_committee_directory: { Args: { _committee_id?: string }; Returns: Json }
+      submit_membership_application_500: { Args: { _payload: Json; _receipt?: Json }; Returns: string }
+      review_membership_payment_500: { Args: { _member_id: string; _reviewer: string; _status?: Database['public']['Enums']['membership_payment_status']; _note?: string; _receipt?: Json; _payment_id?: string }; Returns: Database['public']['Tables']['membership_payments']['Row'] }
+
       consume_verification_budget_v2: { Args: { _resource: string; _client: string }; Returns: boolean }
       lookup_public_office_bearer: { Args: { _card_id: string }; Returns: Json }
       admin_email_delivery_health: { Args: Record<string, never>; Returns: Json }

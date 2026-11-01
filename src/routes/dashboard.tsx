@@ -1,3 +1,4 @@
+import { MemberFeeStatus } from '../components/MemberFeeStatus'
 import { journeyCopy } from '../lib/member-journey'
 import { FreeMembershipNotice } from '../components/FreeMembershipNotice'
 // src/routes/dashboard.tsx
@@ -431,12 +432,7 @@ function DashboardPage() {
               icon={<ShieldCheck className="h-5 w-5" />}
               tone="emerald"
             />
-            <OverviewCard
-              label={t('signup.fee.label')}
-              value={t('membership.freeLabel')}
-              icon={<CreditCard className="h-5 w-5" />}
-              tone="amber"
-            />
+            <MemberFeeStatus memberId={member.id} />
             <OverviewCard
               label={t('dashboard.programsSubmitted')}
               value={secondaryLoading ? '…' : data.applications.length}
@@ -550,7 +546,7 @@ function DashboardPage() {
 
           <aside className="dashboard-sidebar space-y-5">
             <QuickActions member={member} />
-            <FreeMembershipNotice />
+            
             <DonationPanel
               totalDonated={summaries.totalDonated}
               donationCount={summaries.donationCount}

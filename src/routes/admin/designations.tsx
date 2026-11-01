@@ -1,3 +1,5 @@
+import { adminErrorMessage } from '../../lib/admin/data-access'
+import { LoadFailure } from '../../components/admin/LoadFailure'
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { AdminShell } from '../../components/admin/AdminShell'
 import { ArrowLeft, Edit3, Plus, RefreshCw, ShieldAlert } from 'lucide-react'
@@ -40,6 +42,7 @@ function AdminDesignationsPage() {
   const { copy } = useAdminManagementCopy('designations')
   const [designations, setDesignations] = useState<DesignationRecord[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState('')
   const [scopeFilter, setScopeFilter] = useState<'all' | DesignationScope>('all')
@@ -51,19 +54,20 @@ function AdminDesignationsPage() {
 
   async function loadDesignations() {
     setLoading(true)
-    setMessage('')
+    setLoadError('')
+    setLoadError('')
 
     try {
       const allowed = await currentUserCanManageCommittees()
       if (!allowed) {
-        setMessage('Only admin or super admin can manage committee designations.')
+        setLoadError('Only admin or super admin can manage committee designations.')
         setDesignations([])
         return
       }
 
       setDesignations(await fetchDesignations())
     } catch (err) {
-      setMessage(getErrorMessage(err, 'Failed to load designations. Please confirm the committee migration has been applied.'))
+      setLoadError(getErrorMessage(err, 'Failed to load designations. Please confirm the committee migration has been applied.'))
     } finally {
       setLoading(false)
     }
@@ -114,6 +118,9 @@ function AdminDesignationsPage() {
   const filteredDesignations = useMemo(() => {
     return designations.filter((designation) => scopeFilter === 'all' || designation.scope === scopeFilter)
   }, [designations, scopeFilter])
+
+  if (loadError) return <AdminShell title="Designations"><LoadFailure error={new Error(loadError)} onRetry={() => void loadDesignations()} /></AdminShell>
+  if (loading) return <AdminShell title="Designations"><p role="status">Loading records…</p></AdminShell>
 
   return (
     <AdminShell title="Designations" subtitle="Manage office bearer designations and display order.">
@@ -223,19 +230,7 @@ function AdminDesignationsPage() {
 }
 
 
-function getErrorMessage(err: unknown, fallback: string) {
-  if (err instanceof Error && err.message) return err.message
-
-  if (typeof err === 'object' && err !== null) {
-    const maybeError = err as { message?: unknown; details?: unknown; hint?: unknown; code?: unknown }
-    const parts = [maybeError.message, maybeError.details, maybeError.hint, maybeError.code]
-      .filter((part): part is string => typeof part === 'string' && part.trim().length > 0)
-
-    if (parts.length > 0) return parts.join(' — ')
-  }
-
-  return fallback
-}
+function getErrorMessage(err: unknown, fallback: string) { return adminErrorMessage(err, fallback) }
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return <label className="block"><span className="mb-2 block text-sm font-black text-slate-800">{label}</span>{children}</label>

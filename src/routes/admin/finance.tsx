@@ -1,3 +1,5 @@
+import { fetchAllRows, adminErrorMessage } from "../../lib/admin/data-access";
+import { LoadFailure } from "../../components/admin/LoadFailure";
 // src/routes/admin/finance.tsx
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { AdminShell } from '../../components/admin/AdminShell'
@@ -128,6 +130,7 @@ function FinanceAdminPage() {
   const [expenses, setExpenses] = useState<FinanceExpense[]>([]);
   const [auditLogs, setAuditLogs] = useState<FinanceAuditLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [areaNotice, setAreaNotice] = useState("");
@@ -153,6 +156,8 @@ function FinanceAdminPage() {
 
   async function loadFinanceData() {
     setLoading(true);
+    setLoadError("");
+    try {
     setMessage("");
     setSuccess("");
     setAreaNotice("");
@@ -160,7 +165,7 @@ function FinanceAdminPage() {
     const access = await ensureFinanceAdminAccess();
 
     if (!access.ok) {
-      setMessage(access.message);
+      setLoadError(access.message);
       setDonations([]);
       setExpenses([]);
       setAuditLogs([]);
@@ -174,7 +179,7 @@ function FinanceAdminPage() {
     });
 
     if (!areaAccess.ok) {
-      setMessage(areaAccess.message);
+      setLoadError(areaAccess.message);
       setDonations([]);
       setExpenses([]);
       setAuditLogs([]);
@@ -183,16 +188,16 @@ function FinanceAdminPage() {
     }
 
     const [donationResult, expenseResult, auditResult] = await Promise.all([
-      supabase
+      fetchAllRows<FinanceDonation>((from, to) => supabase
         .from("finance_donations")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .returns<FinanceDonation[]>(),
-      supabase
+        .select("*", { count: 'exact' })
+        .order("created_at", { ascending: false }).order("id").range(from, to)
+        .returns<FinanceDonation[]>()),
+      fetchAllRows<FinanceExpense>((from, to) => supabase
         .from("finance_expenses")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .returns<FinanceExpense[]>(),
+        .select("*", { count: 'exact' })
+        .order("created_at", { ascending: false }).order("id").range(from, to)
+        .returns<FinanceExpense[]>()),
       supabase
         .from("finance_audit_logs")
         .select("*")
@@ -202,11 +207,8 @@ function FinanceAdminPage() {
     ]);
 
     if (donationResult.error || expenseResult.error || auditResult.error) {
-      setMessage(
-        donationResult.error?.message ||
-          expenseResult.error?.message ||
-          auditResult.error?.message ||
-          "Unable to load finance records.",
+      setLoadError(
+        adminErrorMessage(donationResult.error || expenseResult.error || auditResult.error),
       );
       setLoading(false);
       return;
@@ -217,6 +219,8 @@ function FinanceAdminPage() {
     setAuditLogs(auditResult.data || []);
     setAreaNotice(getAreaAccessSummaryText(areaAccess));
     setLoading(false);
+    } catch (error) { setLoadError(adminErrorMessage(error)) }
+    finally { setLoading(false) }
   }
 
   const districtOptions = useMemo(() => {
@@ -683,7 +687,7 @@ function FinanceAdminPage() {
                 onClick={() =>
                   exportFinanceCsv(filteredDonations, filteredExpenses)
                 }
-                disabled={loading}
+                disabled={loading || Boolean(loadError)}
                 className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/10 px-5 py-3 font-black text-white transition hover:bg-white/20 disabled:opacity-60"
               >
                 <Download className="mr-2 h-4 w-4" /> {copy.common.exportCsv}
@@ -737,22 +741,22 @@ function FinanceAdminPage() {
       <div className="grid gap-4 md:grid-cols-4">
             <StatCard
               title="Total Donations"
-              value={formatFinanceMoney(dashboard.totalDonations)}
+              value={loading || loadError ? '—' : formatFinanceMoney(dashboard.totalDonations)}
               icon={<BadgeIndianRupee className="h-5 w-5" />}
             />
             <StatCard
               title={copy.page.totalExpenses}
-              value={formatFinanceMoney(dashboard.totalExpenses)}
+              value={loading || loadError ? '—' : formatFinanceMoney(dashboard.totalExpenses)}
               icon={<FileText className="h-5 w-5" />}
             />
             <StatCard
               title="Available Balance"
-              value={formatFinanceMoney(dashboard.balance)}
+              value={loading || loadError ? '—' : formatFinanceMoney(dashboard.balance)}
               icon={<ShieldCheck className="h-5 w-5" />}
             />
             <StatCard
               title="Pending Review"
-              value={dashboard.pendingDonations + dashboard.pendingExpenses}
+              value={loading || loadError ? '—' : dashboard.pendingDonations + dashboard.pendingExpenses}
               icon={<Filter className="h-5 w-5" />}
             />
           </div>
@@ -779,7 +783,7 @@ function FinanceAdminPage() {
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="grid gap-4 xl:grid-cols-[1fr_170px_170px_170px_170px_auto]">
+            <div className="admin-filter-grid">
               <label className="relative block">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <input
@@ -857,7 +861,7 @@ function FinanceAdminPage() {
             <div className="flex justify-center rounded-3xl border border-slate-200 bg-white p-12 shadow-sm">
               <Loader2 className="h-10 w-10 animate-spin text-amber-500" />
             </div>
-          ) : activePanel === "dashboard" ? (
+          ) : loadError ? (<LoadFailure error={new Error(loadError)} onRetry={() => void loadFinanceData()} />) : activePanel === "dashboard" ? (
             <DashboardPanel
               dashboard={dashboard}
               donations={donations}

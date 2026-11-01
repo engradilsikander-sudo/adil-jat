@@ -27,8 +27,8 @@ export type PublicCommitteeRecord = {
 
 export type PublicCommitteeMemberRecord = {
   id: string
-  committee_id: string
-  member_id: string
+  committee_id?: string
+  member_id?: string
   designation_title: string
   status: CommitteeStatus
   sort_order: number
@@ -195,6 +195,7 @@ export function formatOfficeBearerDisplayText(value: string | null | undefined) 
 }
 
 export function buildOfficeBearerId(record: Pick<PublicCommitteeMemberRecord, 'id' | 'created_at'>) {
+  if (/^JAS-OB-\d{4}-[A-F0-9]{8}$/.test(record.id)) return record.id
   const year = new Date(record.created_at || Date.now()).getUTCFullYear()
   const shortId = record.id.replace(/-/g, '').slice(0, 8).toUpperCase()
   return `JAS-OB-${year}-${shortId}`
@@ -228,65 +229,15 @@ export async function fetchOfficeBearerVerification(officeBearerId: string) {
 }
 
 export async function fetchPublicCommittees() {
-  const { data, error } = await supabase
-    .from('organization_committees' as never)
-    .select(committeePublicSelect)
-    .eq('public_display' as never, true as never)
-    .eq('status' as never, 'active' as never)
-    .order('committee_type' as never, { ascending: true })
-    .order('created_at' as never, { ascending: false })
-
-  if (error) throw error
-
-  const committees = (data ?? []) as unknown as PublicCommitteeRecord[]
-  if (!committees.length) return []
-
-  const ids = committees.map((committee) => committee.id)
-  const { data: members, error: membersError } = await supabase
-    .from('organization_committee_members' as never)
-    .select('committee_id')
-    .in('committee_id' as never, ids as never)
-    .eq('status' as never, 'active' as never)
-
-  if (membersError) throw membersError
-
-  const counts = new Map<string, number>()
-  ;((members ?? []) as unknown as Array<{ committee_id: string }>).forEach((item) => {
-    counts.set(item.committee_id, (counts.get(item.committee_id) ?? 0) + 1)
-  })
-
-  return committees.map((committee) => ({
-    ...committee,
-    member_count: counts.get(committee.id) ?? 0,
-  }))
+  const { data,error }=await supabase.rpc('get_public_committee_directory',{})
+  if(error) throw error
+  return (data ?? []) as unknown as PublicCommitteeRecord[]
 }
 
-export async function fetchPublicCommitteeDetails(id: string): Promise<PublicCommitteeDetails | null> {
-  const { data: committee, error } = await supabase
-    .from('organization_committees' as never)
-    .select(committeePublicSelect)
-    .eq('id' as never, id as never)
-    .eq('public_display' as never, true as never)
-    .eq('status' as never, 'active' as never)
-    .maybeSingle()
-
-  if (error) throw error
-  if (!committee) return null
-
-  const { data: members, error: membersError } = await supabase
-    .from('organization_committee_members' as never)
-    .select(committeeMemberPublicSelect)
-    .eq('committee_id' as never, id as never)
-    .eq('status' as never, 'active' as never)
-    .order('sort_order' as never, { ascending: true })
-    .order('created_at' as never, { ascending: true })
-
-  if (membersError) throw membersError
-
-  return {
-    ...(committee as unknown as PublicCommitteeRecord),
-    members: (members ?? []) as unknown as PublicCommitteeMemberRecord[],
-  }
+export async function fetchPublicCommitteeDetails(id:string):Promise<PublicCommitteeDetails | null> {
+  const { data,error }=await supabase.rpc('get_public_committee_directory',{_committee_id:id})
+  if(error) throw error
+  return ((data ?? []) as unknown as PublicCommitteeDetails[])[0] ?? null
 }
 
 export async function fetchMyDesignationCards() {
@@ -336,7 +287,7 @@ async function fetchDesignationCardsForMember(member: DesignationCardMember) {
 
   if (error) throw error
 
-  const rows = (memberships ?? []) as unknown as PublicCommitteeMemberRecord[]
+  const rows = (memberships ?? []) as unknown as (PublicCommitteeMemberRecord & { committee_id: string; member_id: string })[]
   if (!rows.length) return []
 
   const committeeIds = [...new Set(rows.map((row) => row.committee_id))]

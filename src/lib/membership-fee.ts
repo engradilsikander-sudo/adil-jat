@@ -1,10 +1,10 @@
 // src/lib/membership-fee.ts
 
-export const MEMBERSHIP_BASE_FEE = 0
+export const MEMBERSHIP_BASE_FEE = 500
 export const MEMBERSHIP_FEE_CURRENCY = 'PKR'
 export const MEMBERSHIP_PROCESSING_LABEL = 'applicable tax/processing charges'
 export const MEMBERSHIP_PAYMENT_COMING_SOON_TEXT =
-  'Membership is free. No payment or receipt is required.'
+  'Membership fee: Rs. 500 PKR. Upload your receipt for admin verification.'
 
 export const MEMBERSHIP_RECEIPT_BUCKET = 'membership-receipts'
 export const MEMBERSHIP_RECEIPT_MAX_SIZE_BYTES = 5 * 1024 * 1024
@@ -83,19 +83,20 @@ export function formatMembershipMoney(value: number | string | null | undefined)
 }
 
 export function getMembershipFeeNotice() {
-  return 'Membership is free. No payment or receipt is required.'
+  return 'Membership fee: Rs. 500 PKR. Upload your receipt for admin verification.'
 }
 
 export function getMembershipFeeSubtext() {
-  return 'No application fee, tax or processing charges apply.'
+  return 'Total payable: Rs. 500. No additional tax or processing charges.'
 }
 
 export function getManualMembershipPaymentInstruction() {
-  return getMembershipFeeNotice()
+  return 'Pay Rs. 500 using the listed account details, then upload your receipt. A receipt is reviewed by an administrator before payment is marked paid.'
 }
 
 export function getMembershipPaymentQrHelpText() {
-  return getMembershipFeeNotice()
+  return 'Review the receipt against this payment record’s total amount. Historical payment amounts are retained.'
+
 }
 
 export function getMembershipPaymentStatusLabel(
@@ -142,7 +143,14 @@ export function getMembershipPaymentDisplayStatus(
 }
 
 export function assertMembershipPaymentCollectionEnabled() {
-  if (MEMBERSHIP_BASE_FEE === 0) {
+  if (Number(MEMBERSHIP_BASE_FEE) <= 0) {
     throw new Error('Membership is free. Membership payments and receipts are disabled.')
   }
+}
+
+export function validateMembershipReceiptFile(file: Pick<File, 'type' | 'size'>) {
+  if (!MEMBERSHIP_RECEIPT_ALLOWED_TYPES.includes(file.type) || file.size <= 0 || file.size > MEMBERSHIP_RECEIPT_MAX_SIZE_BYTES) {
+    return 'Receipt must be PNG, JPG, WebP or PDF, up to 5MB.'
+  }
+  return ''
 }

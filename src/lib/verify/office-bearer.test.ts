@@ -2,7 +2,7 @@ import { expect, it, vi } from 'vitest'
 
 vi.mock('@tanstack/react-start', () => ({
   createServerFn: () => ({
-    inputValidator: () => ({ handler: (fn: unknown) => fn }),
+    validator: () => ({ handler: (fn: unknown) => fn }),
   }),
 }))
 

@@ -1,3 +1,4 @@
+import { fetchAllRows, adminErrorMessage } from '../../../lib/admin/data-access'
 // src/routes/admin/programs/health.tsx
 import {
   Link,
@@ -59,7 +60,6 @@ type HealthApplicationListItem = {
   details: HealthApplicationDetails | null
   status: string
   assigned_admin_id: string | null
-  admin_remarks: string | null
   approved_amount: number | null
   submitted_at: string
   created_at: string
@@ -100,7 +100,7 @@ function AdminHealthRoute() {
 }
 
 function AdminHealthApplicationsPage() {
-  const { copy } = useAdminProgramsCopy('health')
+  const { copy, language } = useAdminProgramsCopy('health')
   const [applications, setApplications] = useState<HealthApplicationListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
@@ -119,6 +119,7 @@ function AdminHealthApplicationsPage() {
   }, [])
 
   async function loadApplications() {
+    try {
     setLoading(true)
     setMessage('')
     setAreaNotice('')
@@ -143,16 +144,15 @@ function AdminHealthApplicationsPage() {
       return
     }
 
-    const { data, error } = await supabase
-      .from('program_applications')
+    const { data, error } = await fetchAllRows((from, to) => supabase
+      .from('health_application_summaries')
       .select(
-        'id, application_no, applicant_name, membership_no, relationship_to_member, phone, district, taluka, details, status, assigned_admin_id, admin_remarks, approved_amount, submitted_at, created_at',
-      )
+        'id, application_no, applicant_name, membership_no, relationship_to_member, phone, district, taluka, details, status, assigned_admin_id, approved_amount, submitted_at, created_at', { count: 'exact' })
       .eq('program_key', 'health')
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: false }).order('id').range(from, to))
 
     if (error) {
-      setMessage(error.message)
+      setMessage(adminErrorMessage(error))
       setApplications([])
       setLoading(false)
       return
@@ -166,6 +166,10 @@ function AdminHealthApplicationsPage() {
     setApplications(scopedApplications)
     setAreaNotice(getAreaAccessSummaryText(areaAccess))
     setLoading(false)
+    } catch (error) {
+      setMessage(adminErrorMessage(error));
+      setApplications([]);
+    } finally { setLoading(false) }
   }
 
   const districtOptions = useMemo(
@@ -227,13 +231,8 @@ function AdminHealthApplicationsPage() {
             item.phone,
             item.district,
             item.taluka,
-            details.treatment_type,
-            details.hospital_name,
-            details.doctor_name,
             details.required_amount,
-            details.estimated_cost,
             details.health_committee_decision,
-            details.health_committee_members,
           ]
             .filter(Boolean)
             .some((value) => String(value).toLowerCase().includes(q))
@@ -343,7 +342,7 @@ function AdminHealthApplicationsPage() {
             <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[360px]">
               <button
                 type="button"
-                onClick={() => exportHealthCsv(sortedFilteredApplications)}
+                onClick={() => exportHealthCsv(sortedFilteredApplications, language)}
                 disabled={loading || sortedFilteredApplications.length === 0}
                 className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/10 px-5 py-3 font-black text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60"
               >
@@ -382,14 +381,14 @@ function AdminHealthApplicationsPage() {
 
       <section className="px-4 py-10 md:py-14">
         <div className="mx-auto max-w-7xl space-y-8">
-          <div className="grid gap-4 md:grid-cols-7">
-            <StatCard title={copy.common.total} value={stats.total} icon={<ShieldCheck className="h-5 w-5" />} />
-            <StatCard title={copy.common.filtered} value={stats.filtered} icon={<Filter className="h-5 w-5" />} />
-            <StatCard title={copy.common.emergency} value={stats.emergency} icon={<AlertTriangle className="h-5 w-5" />} />
-            <StatCard title="Committee Pending" value={stats.committeePending} icon={<ShieldAlert className="h-5 w-5" />} />
-            <StatCard title={copy.common.underReview} value={stats.underReview} icon={<Stethoscope className="h-5 w-5" />} />
-            <StatCard title={copy.common.approved} value={stats.approved} icon={<UserCheck className="h-5 w-5" />} />
-            <StatCard title="Completed" value={stats.completed} icon={<BadgeIndianRupee className="h-5 w-5" />} />
+          <div className="admin-stat-grid">
+            <StatCard title={copy.common.total} value={loading || message ? null : stats.total} icon={<ShieldCheck className="h-5 w-5" />} />
+            <StatCard title={copy.common.filtered} value={loading || message ? null : stats.filtered} icon={<Filter className="h-5 w-5" />} />
+            <StatCard title={copy.common.emergency} value={loading || message ? null : stats.emergency} icon={<AlertTriangle className="h-5 w-5" />} />
+            <StatCard title="Committee Pending" value={loading || message ? null : stats.committeePending} icon={<ShieldAlert className="h-5 w-5" />} />
+            <StatCard title={copy.common.underReview} value={loading || message ? null : stats.underReview} icon={<Stethoscope className="h-5 w-5" />} />
+            <StatCard title={copy.common.approved} value={loading || message ? null : stats.approved} icon={<UserCheck className="h-5 w-5" />} />
+            <StatCard title="Completed" value={loading || message ? null : stats.completed} icon={<BadgeIndianRupee className="h-5 w-5" />} />
           </div>
 
           <div className="rounded-3xl border border-red-200 bg-red-50 p-5 text-sm leading-7 text-red-900 shadow-sm">
@@ -397,7 +396,7 @@ function AdminHealthApplicationsPage() {
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="grid gap-4 xl:grid-cols-[1fr_180px_180px_180px_180px_180px_180px_auto]">
+            <div className="admin-filter-grid">
               <label className="relative block">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <input
@@ -413,7 +412,7 @@ function AdminHealthApplicationsPage() {
                   <option key={status} value={status}>
                     {status === 'all'
                       ? copy.common.allStatuses
-                      : getHealthStatusLabel(status)}
+                      : getHealthStatusLabel(status, language)}
                   </option>
                 ))}
               </SelectBox>
@@ -484,7 +483,7 @@ function AdminHealthApplicationsPage() {
             <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-800 shadow-sm">
               <ShieldAlert className="mx-auto mb-3 h-10 w-10" />
               <h2 className="text-2xl font-black">Unable to load health cases</h2>
-              <p className="mt-3 font-semibold">{message}</p>
+              <p className="mt-3 font-semibold">{message}</p><button type="button" className="secondary-btn mt-4" onClick={() => void loadApplications()}>Try again</button>
             </div>
           ) : sortedFilteredApplications.length === 0 ? (
             <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
@@ -515,7 +514,7 @@ function StatCard({
   icon,
 }: {
   title: string
-  value: number
+  value: number | null
   icon: ReactNode
 }) {
   return (
@@ -526,7 +525,7 @@ function StatCard({
       <p className="text-sm font-black uppercase tracking-[0.18em] text-slate-400">
         {title}
       </p>
-      <p className="mt-1 text-3xl font-black text-slate-950">{value}</p>
+      <p className="mt-1 text-3xl font-black text-slate-950">{value ?? '—'}</p>
     </div>
   )
 }
@@ -552,7 +551,7 @@ function SelectBox({
 }
 
 function HealthApplicationListCard({ item }: { item: HealthApplicationListItem }) {
-  const { copy } = useAdminProgramsCopy('health')
+  const { copy, language } = useAdminProgramsCopy('health')
   const details = item.details || {}
 
   return (
@@ -568,17 +567,17 @@ function HealthApplicationListCard({ item }: { item: HealthApplicationListItem }
                 item.status,
               )}`}
             >
-              {getHealthStatusLabel(item.status)}
+              {getHealthStatusLabel(item.status, language)}
             </span>
             <span
               className={`rounded-full border px-3 py-1 text-xs font-black ${getHealthCasePriorityClass(details)}`}
             >
-              {getHealthCasePriorityLabel(details)}
+              {getHealthCasePriorityLabel(details, language)}
             </span>
             <span
               className={`rounded-full border px-3 py-1 text-xs font-black ${getHealthCommitteeDecisionClass(details.health_committee_decision)}`}
             >
-              {getHealthCommitteeDecisionLabel(details.health_committee_decision)}
+              {getHealthCommitteeDecisionLabel(details.health_committee_decision, language)}
             </span>
             <span
               className={`rounded-full px-3 py-1 text-xs font-black ${
@@ -604,18 +603,12 @@ function HealthApplicationListCard({ item }: { item: HealthApplicationListItem }
             <p><strong>Phone:</strong> {item.phone}</p>
             <p><strong>District:</strong> {item.district || '-'}</p>
             <p><strong>Taluka:</strong> {item.taluka || '-'}</p>
-            <p><strong>Treatment:</strong> {details.treatment_type || '-'}</p>
-            <p><strong>Hospital:</strong> {details.hospital_name || '-'}</p>
             <p><strong>Required:</strong> {details.required_amount ? `Rs. ${details.required_amount}` : '-'}</p>
-            <p><strong>Payment:</strong> {getHealthPaymentStatusLabel(details.payment_status)}</p>
-            <p><strong>Committee:</strong> {getHealthCommitteeDecisionLabel(details.health_committee_decision)}</p>
+            <p><strong>Payment:</strong> {getHealthPaymentStatusLabel(details.payment_status, language)}</p>
+            <p><strong>Committee:</strong> {getHealthCommitteeDecisionLabel(details.health_committee_decision, language)}</p>
           </div>
 
-          {item.admin_remarks ? (
-            <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700">
-              <strong>Admin Remarks:</strong> {item.admin_remarks}
-            </div>
-          ) : null}
+
         </div>
 
         <div className="flex flex-col justify-between gap-4 lg:min-w-[190px] lg:items-end">
@@ -712,34 +705,30 @@ function normalizeValue(value?: string | null) {
   return value?.trim().toLowerCase() || ''
 }
 
-function exportHealthCsv(items: HealthApplicationListItem[]) {
+function exportHealthCsv(items: HealthApplicationListItem[], language: import('../../../lib/program-status-i18n').ProgramLabelLanguage) {
   const rows = items.map((item, index) => {
     const details = item.details || {}
 
     return {
       serial: index + 1,
       application_no: item.application_no || '',
-      status: getHealthStatusLabel(item.status),
+      status: getHealthStatusLabel(item.status, language),
       emergency: isHealthEmergency(details) ? 'Yes' : 'No',
       patient_name: item.applicant_name,
       membership_no: item.membership_no,
       phone: item.phone,
       district: item.district || '',
       taluka: item.taluka || '',
-      treatment_type: details.treatment_type || '',
-      priority: getHealthCasePriorityLabel(details),
-      committee_decision: getHealthCommitteeDecisionLabel(details.health_committee_decision),
+      priority: getHealthCasePriorityLabel(details, language),
+      committee_decision: getHealthCommitteeDecisionLabel(details.health_committee_decision, language),
       committee_reviewed_at: details.health_committee_reviewed_at || '',
-      hospital_name: details.hospital_name || '',
-      estimated_cost: details.estimated_cost || '',
       required_amount: details.required_amount || '',
       approved_amount: item.approved_amount ?? '',
-      payment_status: getHealthPaymentStatusLabel(details.payment_status),
+      payment_status: getHealthPaymentStatusLabel(details.payment_status, language),
       submitted_at: item.submitted_at
         ? new Date(item.submitted_at).toLocaleString()
         : '',
       assigned_reviewer: item.assigned_admin_id ? 'Assigned' : 'Unassigned',
-      admin_remarks: item.admin_remarks || '',
     }
   })
 
@@ -753,18 +742,14 @@ function exportHealthCsv(items: HealthApplicationListItem[]) {
     'phone',
     'district',
     'taluka',
-    'treatment_type',
     'priority',
     'committee_decision',
     'committee_reviewed_at',
-    'hospital_name',
-    'estimated_cost',
     'required_amount',
     'approved_amount',
     'payment_status',
     'submitted_at',
     'assigned_reviewer',
-    'admin_remarks',
   ] as const
 
   const csv = [

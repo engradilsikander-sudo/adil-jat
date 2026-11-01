@@ -5,7 +5,7 @@ const memberUpdate = vi.hoisted(() => vi.fn())
 
 vi.mock('@tanstack/react-start', () => ({
   createServerFn: () => ({
-    inputValidator: () => ({ handler: (fn: unknown) => fn }),
+    validator: () => ({ handler: (fn: unknown) => fn }),
   }),
 }))
 

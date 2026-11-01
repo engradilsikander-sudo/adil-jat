@@ -73,3 +73,5 @@ test-results/
 # Local release reports and backup exports
 release-reports/
 jas-backups/
+.vercel
+.env*

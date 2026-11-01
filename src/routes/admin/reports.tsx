@@ -1,3 +1,4 @@
+import { adminErrorMessage } from '../../lib/admin/data-access'
 // src/routes/admin/reports.tsx
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
 import { AdminShell } from '../../components/admin/AdminShell'
@@ -58,7 +59,8 @@ function AdminReportsPage() {
         const reports = await loadReportsCenterData()
         setData(reports)
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load reports.')
+        setData(null)
+        setError(adminErrorMessage(err, 'Failed to load reports.'))
       } finally {
         setLoading(false)
         setRefreshing(false)

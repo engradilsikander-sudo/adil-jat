@@ -305,12 +305,12 @@ const welfareDocumentLabelTranslations: Record<WelfareDocumentType, ProgramLabel
   other: { en: 'Other Supporting Document', ur: 'دیگر معاون دستاویز', sd: 'ٻيو مددگار دستاويز' },
 }
 
-export function getWelfareStatusLabel(status: string) {
+export function getWelfareStatusLabel(status: string, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   const typedStatus = status as WelfareStatus
 
   return localizedProgramLabel(
     welfareStatusLabelTranslations[typedStatus],
-    welfareStatusLabels[typedStatus] ?? status,
+    welfareStatusLabels[typedStatus] ?? status, language,
   )
 }
 
@@ -335,19 +335,19 @@ export function getWelfareDocumentConfig(type: string) {
   return welfareDocumentOptions.find((item) => item.type === type)
 }
 
-export function getWelfareDocumentLabel(type: string) {
+export function getWelfareDocumentLabel(type: string, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   const typedType = type as WelfareDocumentType
   const fallback = getWelfareDocumentConfig(type)?.label ?? type
 
-  return localizedProgramLabel(welfareDocumentLabelTranslations[typedType], fallback)
+  return localizedProgramLabel(welfareDocumentLabelTranslations[typedType], fallback, language)
 }
 
-export function getWelfareDocumentStatusLabel(status: string) {
+export function getWelfareDocumentStatusLabel(status: string, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   const typedStatus = status as WelfareDocumentVerificationStatus
 
   return localizedProgramLabel(
     welfareDocumentStatusLabelTranslations[typedStatus],
-    welfareDocumentStatusLabels[typedStatus] ?? status,
+    welfareDocumentStatusLabels[typedStatus] ?? status, language,
   )
 }
 
@@ -364,11 +364,11 @@ export function getWelfareDocumentStatusClass(status: string) {
   }
 }
 
-export function getWelfarePaymentStatusLabel(status?: string | null) {
+export function getWelfarePaymentStatusLabel(status?: string | null, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   if (!status) {
     return localizedProgramLabel(
       welfarePaymentStatusLabelTranslations.not_started,
-      'Not Started',
+      'Not Started', language,
     )
   }
 
@@ -379,7 +379,7 @@ export function getWelfarePaymentStatusLabel(status?: string | null) {
 
   return localizedProgramLabel(
     welfarePaymentStatusLabelTranslations[typedStatus],
-    fallback,
+    fallback, language,
   )
 }
 
@@ -427,11 +427,11 @@ export function isWelfareEmergency(details?: WelfareApplicationDetails | null) {
   return Boolean(details?.emergency)
 }
 
-export function getWelfareCommitteeDecisionLabel(status?: string | null) {
+export function getWelfareCommitteeDecisionLabel(status?: string | null, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   if (!status) {
     return localizedProgramLabel(
       welfareCommitteeDecisionLabelTranslations.pending,
-      'Pending Welfare Committee',
+      'Pending Welfare Committee', language,
     )
   }
 
@@ -442,7 +442,7 @@ export function getWelfareCommitteeDecisionLabel(status?: string | null) {
 
   return localizedProgramLabel(
     welfareCommitteeDecisionLabelTranslations[typedStatus],
-    fallback,
+    fallback, language,
   )
 }
 
@@ -466,7 +466,7 @@ export function getWelfareCasePriority(details?: WelfareApplicationDetails | nul
   return isWelfareEmergency(details) ? 'emergency' : 'normal'
 }
 
-export function getWelfareCasePriorityLabel(details?: WelfareApplicationDetails | null) {
+export function getWelfareCasePriorityLabel(details?: WelfareApplicationDetails | null, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   const priority = getWelfareCasePriority(details)
 
   return localizedProgramLabel(
@@ -475,7 +475,7 @@ export function getWelfareCasePriorityLabel(details?: WelfareApplicationDetails 
       ? 'Emergency'
       : priority === 'urgent'
         ? 'Urgent'
-        : 'Normal',
+        : 'Normal', language,
   )
 }
 

@@ -245,12 +245,12 @@ const educationDocumentLabelTranslations: Record<EducationDocumentType, ProgramL
 };
 
 
-export function getEducationStatusLabel(status: string) {
+export function getEducationStatusLabel(status: string, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   const typedStatus = status as EducationStatus
 
   return localizedProgramLabel(
     educationStatusLabelTranslations[typedStatus],
-    educationStatusLabels[typedStatus] ?? status,
+    educationStatusLabels[typedStatus] ?? status, language,
   )
 }
 
@@ -275,19 +275,19 @@ export function getEducationDocumentConfig(type: string) {
   return educationDocumentOptions.find((item) => item.type === type);
 }
 
-export function getEducationDocumentLabel(type: string) {
+export function getEducationDocumentLabel(type: string, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   const typedType = type as EducationDocumentType
   const fallback = getEducationDocumentConfig(type)?.label ?? type
 
-  return localizedProgramLabel(educationDocumentLabelTranslations[typedType], fallback)
+  return localizedProgramLabel(educationDocumentLabelTranslations[typedType], fallback, language)
 }
 
-export function getEducationDocumentStatusLabel(status: string) {
+export function getEducationDocumentStatusLabel(status: string, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   const typedStatus = status as EducationDocumentVerificationStatus
 
   return localizedProgramLabel(
     educationDocumentStatusLabelTranslations[typedStatus],
-    educationDocumentStatusLabels[typedStatus] ?? status,
+    educationDocumentStatusLabels[typedStatus] ?? status, language,
   )
 }
 

@@ -1,3 +1,4 @@
+import { fetchAllRows, adminErrorMessage } from '../../../lib/admin/data-access'
 import {
   Link,
   Outlet,
@@ -82,7 +83,7 @@ function AdminEducationRoute() {
 }
 
 function AdminEducationApplicationsPage() {
-  const { copy } = useAdminProgramsCopy('education')
+  const { copy, language } = useAdminProgramsCopy('education')
   const [applications, setApplications] = useState<
     EducationApplicationListItem[]
   >([])
@@ -99,6 +100,7 @@ function AdminEducationApplicationsPage() {
   }, [])
 
   async function loadApplications() {
+    try {
     setLoading(true)
     setMessage('')
     setAreaNotice('')
@@ -127,16 +129,15 @@ function AdminEducationApplicationsPage() {
       return
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await fetchAllRows((from, to) => supabase
       .from('program_applications')
       .select(
-        'id, application_no, applicant_name, membership_no, relationship_to_member, phone, district, taluka, details, status, assigned_admin_id, admin_remarks, approved_amount, submitted_at, created_at',
-      )
+        'id, application_no, applicant_name, membership_no, relationship_to_member, phone, district, taluka, details, status, assigned_admin_id, admin_remarks, approved_amount, submitted_at, created_at', { count: 'exact' })
       .eq('program_key', 'education')
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: false }).order('id').range(from, to))
 
     if (error) {
-      setMessage(error.message)
+      setMessage(adminErrorMessage(error))
       setApplications([])
       setLoading(false)
       return
@@ -150,6 +151,10 @@ function AdminEducationApplicationsPage() {
     setApplications(scopedApplications)
     setAreaNotice(getAreaAccessSummaryText(areaAccess))
     setLoading(false)
+    } catch (error) {
+      setMessage(adminErrorMessage(error));
+      setApplications([]);
+    } finally { setLoading(false) }
   }
 
   const districtOptions = useMemo(
@@ -275,8 +280,8 @@ function AdminEducationApplicationsPage() {
             <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[360px]">
               <button
                 type="button"
-                onClick={() => exportEducationCsv(filteredApplications)}
-                disabled={loading || filteredApplications.length === 0}
+                onClick={() => exportEducationCsv(filteredApplications, language)}
+                disabled={loading || Boolean(message) || filteredApplications.length === 0}
                 className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/10 px-5 py-3 font-black text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <Download className="mr-2 h-4 w-4" />
@@ -314,41 +319,41 @@ function AdminEducationApplicationsPage() {
 
       <section className="px-4 py-10 md:py-14">
         <div className="mx-auto max-w-7xl space-y-8">
-          <div className="grid gap-4 md:grid-cols-6">
+          <div className="admin-stat-grid">
             <StatCard
               title={copy.common.total}
-              value={stats.total}
+              value={loading || message ? null : stats.total}
               icon={<ClipboardList className="h-5 w-5" />}
             />
             <StatCard
               title={copy.common.filtered}
-              value={stats.filtered}
+              value={loading || message ? null : stats.filtered}
               icon={<Filter className="h-5 w-5" />}
             />
             <StatCard
               title={copy.common.submitted}
-              value={stats.submitted}
+              value={loading || message ? null : stats.submitted}
               icon={<CalendarDays className="h-5 w-5" />}
             />
             <StatCard
               title={copy.common.underReview}
-              value={stats.underReview}
+              value={loading || message ? null : stats.underReview}
               icon={<ShieldCheck className="h-5 w-5" />}
             />
             <StatCard
               title={copy.common.approved}
-              value={stats.approved}
+              value={loading || message ? null : stats.approved}
               icon={<UserCheck className="h-5 w-5" />}
             />
             <StatCard
               title="Completed"
-              value={stats.completed}
+              value={loading || message ? null : stats.completed}
               icon={<BadgeIndianRupee className="h-5 w-5" />}
             />
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="grid gap-4 xl:grid-cols-[1fr_220px_220px_220px_auto]">
+            <div className="admin-filter-grid">
               <label className="relative block">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <input
@@ -368,7 +373,7 @@ function AdminEducationApplicationsPage() {
                   <option key={status} value={status}>
                     {status === 'all'
                       ? copy.common.allStatuses
-                      : getEducationStatusLabel(status)}
+                      : getEducationStatusLabel(status, language)}
                   </option>
                 ))}
               </select>
@@ -417,7 +422,7 @@ function AdminEducationApplicationsPage() {
           ) : message ? (
             <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-800 shadow-sm">
               <h2 className="text-2xl font-black">Unable to load applications</h2>
-              <p className="mt-3 font-semibold">{message}</p>
+              <p className="mt-3 font-semibold">{message}</p><button type="button" className="secondary-btn mt-4" onClick={() => void loadApplications()}>Try again</button>
             </div>
           ) : filteredApplications.length === 0 ? (
             <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm">
@@ -449,7 +454,7 @@ function StatCard({
   icon,
 }: {
   title: string
-  value: number
+  value: number | null
   icon: ReactNode
 }) {
   return (
@@ -460,13 +465,13 @@ function StatCard({
       <p className="text-sm font-black uppercase tracking-[0.18em] text-slate-400">
         {title}
       </p>
-      <p className="mt-1 text-3xl font-black text-slate-950">{value}</p>
+      <p className="mt-1 text-3xl font-black text-slate-950">{value ?? '—'}</p>
     </div>
   )
 }
 
 function ApplicationListCard({ item }: { item: EducationApplicationListItem }) {
-  const { copy } = useAdminProgramsCopy('education')
+  const { copy, language } = useAdminProgramsCopy('education')
   const details = item.details || {}
 
   return (
@@ -483,7 +488,7 @@ function ApplicationListCard({ item }: { item: EducationApplicationListItem }) {
                 item.status,
               )}`}
             >
-              {getEducationStatusLabel(item.status)}
+              {getEducationStatusLabel(item.status, language)}
             </span>
 
             <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-black text-amber-700">
@@ -588,14 +593,14 @@ function normalizeValue(value?: string | null) {
   return value?.trim().toLowerCase() || ''
 }
 
-function exportEducationCsv(items: EducationApplicationListItem[]) {
+function exportEducationCsv(items: EducationApplicationListItem[], language: import('../../../lib/program-status-i18n').ProgramLabelLanguage) {
   const rows = items.map((item, index) => {
     const details = item.details || {}
 
     return {
       serial: index + 1,
       application_no: item.application_no || '',
-      status: getEducationStatusLabel(item.status),
+      status: getEducationStatusLabel(item.status, language),
       applicant_name: item.applicant_name,
       membership_no: item.membership_no,
       phone: item.phone,

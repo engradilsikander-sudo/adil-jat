@@ -317,12 +317,12 @@ const healthDocumentLabelTranslations: Record<HealthDocumentType, ProgramLabelMa
   other: { en: 'Other Supporting Document', ur: 'دیگر معاون دستاویز', sd: 'ٻيو مددگار دستاويز' },
 }
 
-export function getHealthStatusLabel(status: string) {
+export function getHealthStatusLabel(status: string, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   const typedStatus = status as HealthStatus
 
   return localizedProgramLabel(
     healthStatusLabelTranslations[typedStatus],
-    healthStatusLabels[typedStatus] ?? status,
+    healthStatusLabels[typedStatus] ?? status, language,
   )
 }
 
@@ -347,19 +347,19 @@ export function getHealthDocumentConfig(type: string) {
   return healthDocumentOptions.find((item) => item.type === type)
 }
 
-export function getHealthDocumentLabel(type: string) {
+export function getHealthDocumentLabel(type: string, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   const typedType = type as HealthDocumentType
   const fallback = getHealthDocumentConfig(type)?.label ?? type
 
-  return localizedProgramLabel(healthDocumentLabelTranslations[typedType], fallback)
+  return localizedProgramLabel(healthDocumentLabelTranslations[typedType], fallback, language)
 }
 
-export function getHealthDocumentStatusLabel(status: string) {
+export function getHealthDocumentStatusLabel(status: string, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   const typedStatus = status as HealthDocumentVerificationStatus
 
   return localizedProgramLabel(
     healthDocumentStatusLabelTranslations[typedStatus],
-    healthDocumentStatusLabels[typedStatus] ?? status,
+    healthDocumentStatusLabels[typedStatus] ?? status, language,
   )
 }
 
@@ -376,11 +376,11 @@ export function getHealthDocumentStatusClass(status: string) {
   }
 }
 
-export function getHealthPaymentStatusLabel(status?: string | null) {
+export function getHealthPaymentStatusLabel(status?: string | null, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   if (!status) {
     return localizedProgramLabel(
       healthPaymentStatusLabelTranslations.not_started,
-      'Not Started',
+      'Not Started', language,
     )
   }
 
@@ -391,7 +391,7 @@ export function getHealthPaymentStatusLabel(status?: string | null) {
 
   return localizedProgramLabel(
     healthPaymentStatusLabelTranslations[typedStatus],
-    fallback,
+    fallback, language,
   )
 }
 
@@ -449,11 +449,11 @@ export function isHealthEmergency(details?: HealthApplicationDetails | null) {
 }
 
 
-export function getHealthCommitteeDecisionLabel(status?: string | null) {
+export function getHealthCommitteeDecisionLabel(status?: string | null, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   if (!status) {
     return localizedProgramLabel(
       healthCommitteeDecisionLabelTranslations.pending,
-      'Pending Committee Review',
+      'Pending Committee Review', language,
     )
   }
 
@@ -464,7 +464,7 @@ export function getHealthCommitteeDecisionLabel(status?: string | null) {
 
   return localizedProgramLabel(
     healthCommitteeDecisionLabelTranslations[typedStatus],
-    fallback,
+    fallback, language,
   )
 }
 
@@ -488,7 +488,7 @@ export function getHealthCasePriority(details?: HealthApplicationDetails | null)
   return isHealthEmergency(details) ? 'emergency' : 'normal'
 }
 
-export function getHealthCasePriorityLabel(details?: HealthApplicationDetails | null) {
+export function getHealthCasePriorityLabel(details?: HealthApplicationDetails | null, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   const priority = getHealthCasePriority(details)
 
   return localizedProgramLabel(
@@ -497,7 +497,7 @@ export function getHealthCasePriorityLabel(details?: HealthApplicationDetails | 
       ? 'Emergency'
       : priority === 'urgent'
         ? 'Urgent'
-        : 'Normal',
+        : 'Normal', language,
   )
 }
 

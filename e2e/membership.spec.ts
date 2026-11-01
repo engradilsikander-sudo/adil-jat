@@ -49,6 +49,7 @@ test('signup → application → admin approval → card download → QR', async
     await page.locator('#emergencyContactMobile').fill('03001234568')
     await page.getByRole('button', { name: /Next Step/ }).click()
     await page.locator('#photo').setInputFiles(resolve('public/jas/logo.jpeg'))
+    await page.locator('#membership-receipt').setInputFiles(resolve('public/jas/logo.jpeg'))
     await page.locator('.reg-declaration input[type=checkbox]').check()
     await page.locator('.reg-form button[type=submit]').click()
     await page.waitForURL('**/dashboard')
@@ -60,6 +61,8 @@ test('signup → application → admin approval → card download → QR', async
     await review.waitForURL(/\/(admin|dashboard)/)
     await review.goto(`${baseURL}/admin/members/${member.data!.id}`)
     review.on('dialog', (dialog) => dialog.accept())
+    await review.getByRole('button', { name: /Mark Paid/i }).click()
+    await expect.poll(async () => (await db.from('membership_payments').select('status').eq('member_id',member.data!.id).single()).data?.status).toBe('paid')
     await review.getByRole('button', { name: /Approve/i }).click()
     let memberNo = ''
     await expect.poll(async () => {
@@ -79,6 +82,8 @@ test('signup → application → admin approval → card download → QR', async
     if (userId) {
       const photos = await db.storage.from('member-photos').list(userId)
       if (photos.data?.length) await db.storage.from('member-photos').remove(photos.data.map((p) => `${userId}/${p.name}`))
+      const receipts = await db.storage.from('membership-receipts').list(userId)
+      if(receipts.data?.length) await db.storage.from('membership-receipts').remove(receipts.data.map(p => `${userId}/${p.name}`))
       const removed = await db.auth.admin.deleteUser(userId)
       if (removed.error) throw new Error('Staging test user cleanup failed; remove test user manually.')
     }

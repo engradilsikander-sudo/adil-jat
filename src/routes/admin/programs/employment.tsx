@@ -1,3 +1,4 @@
+import { fetchAllRows, adminErrorMessage } from '../../../lib/admin/data-access'
 import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router'
 import { AdminShell } from '../../../components/admin/AdminShell'
 import {
@@ -64,7 +65,7 @@ function AdminEmploymentRoute() {
 }
 
 function AdminEmploymentApplicationsPage() {
-  const { copy } = useAdminProgramsCopy('employment')
+  const { copy, language } = useAdminProgramsCopy('employment')
   const [applications, setApplications] = useState<EmploymentApplicationListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
@@ -84,6 +85,7 @@ function AdminEmploymentApplicationsPage() {
   }
 
   async function loadApplications() {
+    try {
     setLoading(true)
     setMessage('')
     setAreaNotice('')
@@ -96,14 +98,14 @@ function AdminEmploymentApplicationsPage() {
       return
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await fetchAllRows((from, to) => supabase
       .from('program_applications')
-      .select('id, application_no, applicant_name, membership_no, phone, district, taluka, details, status, assigned_admin_id, admin_remarks, submitted_at, created_at')
+      .select('id, application_no, applicant_name, membership_no, phone, district, taluka, details, status, assigned_admin_id, admin_remarks, submitted_at, created_at', { count: 'exact' })
       .eq('program_key', 'employment')
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: false }).order('id').range(from, to))
 
     if (error) {
-      setMessage(error.message)
+      setMessage(adminErrorMessage(error))
       setApplications([])
     } else {
       const scopedApplications = filterRowsByAreaAccess(
@@ -116,6 +118,10 @@ function AdminEmploymentApplicationsPage() {
     }
 
     setLoading(false)
+    } catch (error) {
+      setMessage(adminErrorMessage(error));
+      setApplications([]);
+    } finally { setLoading(false) }
   }
 
   const districtOptions = useMemo(() => uniqueOptions(applications.map((item) => item.district)), [applications])
@@ -183,7 +189,7 @@ function AdminEmploymentApplicationsPage() {
       return {
         serial: index + 1,
         application_no: item.application_no || '',
-        status: getEmploymentStatusLabel(item.status),
+        status: getEmploymentStatusLabel(item.status, language),
         applicant_name: item.applicant_name,
         membership_no: item.membership_no,
         phone: item.phone,
@@ -193,8 +199,8 @@ function AdminEmploymentApplicationsPage() {
         skills: formatSkills(details.skills),
         preferred_location: details.preferred_job_location || '',
         expected_salary: details.expected_salary || '',
-        current_status: getCurrentEmploymentStatusLabel(details.current_employment_status),
-        shortlist_status: getShortlistStatusLabel(details.shortlist_status),
+        current_status: getCurrentEmploymentStatusLabel(details.current_employment_status, language),
+        shortlist_status: getShortlistStatusLabel(details.shortlist_status, language),
         submitted_at: item.created_at ? new Date(item.created_at).toLocaleString() : '',
       }
     })
@@ -225,7 +231,7 @@ function AdminEmploymentApplicationsPage() {
               <p className="mt-4 max-w-2xl text-lg leading-8 text-white/70">{copy.program.listSubtitle}</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[360px]">
-              <button type="button" onClick={exportCsv} disabled={loading || filteredApplications.length === 0} className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/10 px-5 py-3 font-black text-white transition hover:bg-white/20 disabled:opacity-60"><Download className="mr-2 h-4 w-4" /> {copy.common.exportCsv}</button>
+              <button type="button" onClick={exportCsv} disabled={loading || Boolean(message) || filteredApplications.length === 0} className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/10 px-5 py-3 font-black text-white transition hover:bg-white/20 disabled:opacity-60"><Download className="mr-2 h-4 w-4" /> {copy.common.exportCsv}</button>
               <button type="button" onClick={loadApplications} disabled={loading} className="inline-flex items-center justify-center rounded-xl bg-emerald-400 px-5 py-3 font-black text-slate-950 transition hover:bg-emerald-300 disabled:opacity-60"><RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} /> {copy.common.refresh}</button>
             </div>
           </div>
@@ -234,19 +240,19 @@ function AdminEmploymentApplicationsPage() {
 
       <section className="px-4 py-10 md:py-14">
         <div className="mx-auto max-w-7xl space-y-8">
-          <div className="grid gap-4 md:grid-cols-5">
-            <StatCard title={copy.common.total} value={stats.total} icon={<Users className="h-5 w-5" />} />
-            <StatCard title={copy.common.filtered} value={stats.filtered} icon={<Filter className="h-5 w-5" />} />
-            <StatCard title={copy.common.underReview} value={stats.underReview} icon={<ShieldAlert className="h-5 w-5" />} />
-            <StatCard title={copy.common.shortlisted} value={stats.shortlisted} icon={<UserCheck className="h-5 w-5" />} />
-            <StatCard title={copy.common.placed} value={stats.placed} icon={<BriefcaseBusiness className="h-5 w-5" />} />
+          <div className="admin-stat-grid">
+            <StatCard title={copy.common.total} value={loading || message ? null : stats.total} icon={<Users className="h-5 w-5" />} />
+            <StatCard title={copy.common.filtered} value={loading || message ? null : stats.filtered} icon={<Filter className="h-5 w-5" />} />
+            <StatCard title={copy.common.underReview} value={loading || message ? null : stats.underReview} icon={<ShieldAlert className="h-5 w-5" />} />
+            <StatCard title={copy.common.shortlisted} value={loading || message ? null : stats.shortlisted} icon={<UserCheck className="h-5 w-5" />} />
+            <StatCard title={copy.common.placed} value={loading || message ? null : stats.placed} icon={<BriefcaseBusiness className="h-5 w-5" />} />
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="grid gap-4 xl:grid-cols-[1fr_180px_180px_180px_180px_auto]">
+            <div className="admin-filter-grid">
               <label className="relative block"><Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" /><input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder={copy.program.searchPlaceholder} className="w-full rounded-2xl border border-slate-300 bg-white py-3 pl-12 pr-4 font-semibold outline-none focus:border-emerald-500" /></label>
               <input value={skillFilter} onChange={(event) => setSkillFilter(event.target.value)} placeholder={copy.program.skillFilter} className="rounded-2xl border border-slate-300 bg-white px-4 py-3 font-semibold outline-none focus:border-emerald-500" />
-              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="rounded-2xl border border-slate-300 bg-white px-4 py-3 font-semibold outline-none focus:border-emerald-500">{statusOptions.map((status) => <option key={status} value={status}>{status === 'all' ? copy.common.allStatuses : getEmploymentStatusLabel(status)}</option>)}</select>
+              <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} className="rounded-2xl border border-slate-300 bg-white px-4 py-3 font-semibold outline-none focus:border-emerald-500">{statusOptions.map((status) => <option key={status} value={status}>{status === 'all' ? copy.common.allStatuses : getEmploymentStatusLabel(status, language)}</option>)}</select>
               <select value={districtFilter} onChange={(event) => { setDistrictFilter(event.target.value); setTalukaFilter('all') }} className="rounded-2xl border border-slate-300 bg-white px-4 py-3 font-semibold outline-none focus:border-emerald-500"><option value="all">{copy.common.allDistricts}</option>{districtOptions.map((district) => <option key={district.value} value={district.value}>{district.label}</option>)}</select>
               <select value={talukaFilter} onChange={(event) => setTalukaFilter(event.target.value)} className="rounded-2xl border border-slate-300 bg-white px-4 py-3 font-semibold outline-none focus:border-emerald-500"><option value="all">{copy.common.allTalukas}</option>{talukaOptions.map((taluka) => <option key={taluka.value} value={taluka.value}>{taluka.label}</option>)}</select>
               <button type="button" onClick={resetFilters} className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 font-black text-slate-700 hover:bg-slate-50"><XCircle className="mr-2 h-4 w-4" /> Reset</button>
@@ -262,7 +268,7 @@ function AdminEmploymentApplicationsPage() {
 }
 
 function CandidateCard({ item }: { item: EmploymentApplicationListItem }) {
-  const { copy } = useAdminProgramsCopy('employment')
+  const { copy, language } = useAdminProgramsCopy('employment')
   const details = item.details || {}
   return (
     <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
@@ -270,15 +276,15 @@ function CandidateCard({ item }: { item: EmploymentApplicationListItem }) {
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">{item.application_no || 'Candidate'}</span>
-            <span className={`rounded-full border px-3 py-1 text-xs font-black ${getEmploymentStatusClass(item.status)}`}>{getEmploymentStatusLabel(item.status)}</span>
-            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">{getShortlistStatusLabel(details.shortlist_status)}</span>
+            <span className={`rounded-full border px-3 py-1 text-xs font-black ${getEmploymentStatusClass(item.status)}`}>{getEmploymentStatusLabel(item.status, language)}</span>
+            <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-black text-emerald-700">{getShortlistStatusLabel(details.shortlist_status, language)}</span>
             <span className={item.assigned_admin_id ? 'rounded-full bg-blue-50 px-3 py-1 text-xs font-black text-blue-700' : 'rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-600'}>{item.assigned_admin_id ? 'Reviewer Assigned' : 'Unassigned'}</span>
           </div>
           <div><h2 className="text-2xl font-black text-slate-950">{item.applicant_name}</h2><p className="mt-1 text-sm font-semibold text-slate-500">Membership No: {item.membership_no}</p></div>
           <div className="grid gap-2 text-sm text-slate-600 md:grid-cols-3">
             <p><strong>Phone:</strong> {item.phone}</p><p><strong>District:</strong> {item.district || '-'}</p><p><strong>Taluka:</strong> {item.taluka || '-'}</p>
             <p><strong>Education:</strong> {details.education_level || '-'}</p><p><strong>Skills:</strong> {formatSkills(details.skills)}</p><p><strong>Location:</strong> {details.preferred_job_location || '-'}</p>
-            <p><strong>Salary:</strong> {details.expected_salary || '-'}</p><p><strong>Current:</strong> {getCurrentEmploymentStatusLabel(details.current_employment_status)}</p><p><strong>Submitted:</strong> {new Date(item.created_at).toLocaleDateString()}</p>
+            <p><strong>Salary:</strong> {details.expected_salary || '-'}</p><p><strong>Current:</strong> {getCurrentEmploymentStatusLabel(details.current_employment_status, language)}</p><p><strong>Submitted:</strong> {new Date(item.created_at).toLocaleDateString()}</p>
           </div>
           {item.admin_remarks ? <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700"><strong>Admin Remarks:</strong> {item.admin_remarks}</div> : null}
         </div>
@@ -290,8 +296,8 @@ function CandidateCard({ item }: { item: EmploymentApplicationListItem }) {
   )
 }
 
-function StatCard({ title, value, icon }: { title: string; value: number; icon: ReactNode }) {
-  return <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">{icon}</div><p className="text-sm font-black uppercase tracking-[0.18em] text-slate-400">{title}</p><p className="mt-1 text-3xl font-black text-slate-950">{value}</p></div>
+function StatCard({ title, value, icon }: { title: string; value: number | null; icon: ReactNode }) {
+  return <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-700">{icon}</div><p className="text-sm font-black uppercase tracking-[0.18em] text-slate-400">{title}</p><p className="mt-1 text-3xl font-black text-slate-950">{value ?? '—'}</p></div>
 }
 
 function uniqueOptions(values: Array<string | null>) { const map = new Map<string,string>(); for (const value of values) { const label=value?.trim(); if(!label) continue; const normalized=normalize(label); if(!map.has(normalized)) map.set(normalized,label)} return Array.from(map.entries()).map(([value,label])=>({value,label})).sort((a,b)=>a.label.localeCompare(b.label)) }

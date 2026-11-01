@@ -1,3 +1,4 @@
+import { fetchAllRows, adminErrorMessage } from '../../../lib/admin/data-access'
 // src/routes/admin/programs/welfare.tsx
 import { Link, Outlet, createFileRoute, useRouterState } from '@tanstack/react-router'
 import { AdminShell } from '../../../components/admin/AdminShell'
@@ -78,7 +79,7 @@ function AdminWelfareRoute() {
 }
 
 function AdminWelfareApplicationsPage() {
-  const { copy } = useAdminProgramsCopy('welfare')
+  const { copy, language } = useAdminProgramsCopy('welfare')
   const [applications, setApplications] = useState<WelfareApplicationListItem[]>([])
   const [loading, setLoading] = useState(true)
   const [message, setMessage] = useState('')
@@ -97,6 +98,7 @@ function AdminWelfareApplicationsPage() {
   }, [])
 
   async function loadApplications() {
+    try {
     setLoading(true)
     setMessage('')
     setAreaNotice('')
@@ -121,14 +123,14 @@ function AdminWelfareApplicationsPage() {
       return
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await fetchAllRows((from, to) => supabase
       .from('program_applications')
-      .select('id, application_no, applicant_name, membership_no, relationship_to_member, phone, district, taluka, details, status, assigned_admin_id, admin_remarks, approved_amount, submitted_at, created_at')
+      .select('id, application_no, applicant_name, membership_no, relationship_to_member, phone, district, taluka, details, status, assigned_admin_id, admin_remarks, approved_amount, submitted_at, created_at', { count: 'exact' })
       .eq('program_key', 'welfare')
-      .order('created_at', { ascending: false })
+      .order('created_at', { ascending: false }).order('id').range(from, to))
 
     if (error) {
-      setMessage(error.message)
+      setMessage(adminErrorMessage(error))
       setApplications([])
       setLoading(false)
       return
@@ -142,6 +144,10 @@ function AdminWelfareApplicationsPage() {
     setApplications(scopedApplications)
     setAreaNotice(getAreaAccessSummaryText(areaAccess))
     setLoading(false)
+    } catch (error) {
+      setMessage(adminErrorMessage(error));
+      setApplications([]);
+    } finally { setLoading(false) }
   }
 
   const districtOptions = useMemo(() => getUniqueOptions(applications.map((item) => item.district)), [applications])
@@ -221,7 +227,7 @@ function AdminWelfareApplicationsPage() {
               <p className="mt-4 max-w-2xl text-lg leading-8 text-white/70">{copy.program.listSubtitle}</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2 lg:min-w-[360px]">
-              <button type="button" onClick={() => exportWelfareCsv(filteredApplications)} disabled={loading || filteredApplications.length === 0} className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/10 px-5 py-3 font-black text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60">
+              <button type="button" onClick={() => exportWelfareCsv(filteredApplications, language)} disabled={loading || Boolean(message) || filteredApplications.length === 0} className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/10 px-5 py-3 font-black text-white transition hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-60">
                 <Download className="mr-2 h-4 w-4" /> {copy.common.exportCsv}
               </button>
               <button type="button" onClick={loadApplications} disabled={loading} className="inline-flex items-center justify-center rounded-xl bg-amber-400 px-5 py-3 font-black text-slate-950 transition hover:bg-amber-300 disabled:opacity-60">
@@ -234,32 +240,32 @@ function AdminWelfareApplicationsPage() {
 
       <section className="px-4 py-10 md:py-14">
         <div className="mx-auto max-w-7xl space-y-8">
-          <div className="grid gap-4 md:grid-cols-7">
-            <StatCard title={copy.common.total} value={stats.total} icon={<HandHeart className="h-5 w-5" />} />
-            <StatCard title={copy.common.filtered} value={stats.filtered} icon={<Filter className="h-5 w-5" />} />
-            <StatCard title={copy.common.new} value={stats.newCases} icon={<ShieldCheck className="h-5 w-5" />} />
-            <StatCard title={copy.common.verify} value={stats.underReview} icon={<UserCheck className="h-5 w-5" />} />
-            <StatCard title={copy.common.approved} value={stats.approved} icon={<BadgeIndianRupee className="h-5 w-5" />} />
-            <StatCard title={copy.common.released} value={stats.released} icon={<BadgeIndianRupee className="h-5 w-5" />} />
-            <StatCard title={copy.common.emergency} value={stats.emergency} icon={<ShieldCheck className="h-5 w-5" />} />
+          <div className="admin-stat-grid">
+            <StatCard title={copy.common.total} value={loading || message ? null : stats.total} icon={<HandHeart className="h-5 w-5" />} />
+            <StatCard title={copy.common.filtered} value={loading || message ? null : stats.filtered} icon={<Filter className="h-5 w-5" />} />
+            <StatCard title={copy.common.new} value={loading || message ? null : stats.newCases} icon={<ShieldCheck className="h-5 w-5" />} />
+            <StatCard title={copy.common.verify} value={loading || message ? null : stats.underReview} icon={<UserCheck className="h-5 w-5" />} />
+            <StatCard title={copy.common.approved} value={loading || message ? null : stats.approved} icon={<BadgeIndianRupee className="h-5 w-5" />} />
+            <StatCard title={copy.common.released} value={loading || message ? null : stats.released} icon={<BadgeIndianRupee className="h-5 w-5" />} />
+            <StatCard title={copy.common.emergency} value={loading || message ? null : stats.emergency} icon={<ShieldCheck className="h-5 w-5" />} />
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="grid gap-4 xl:grid-cols-[1fr_170px_170px_170px_150px_150px_170px_auto]">
+            <div className="admin-filter-grid">
               <label className="relative block">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
                 <input value={searchTerm} onChange={(event) => setSearchTerm(event.target.value)} placeholder={copy.program.searchPlaceholder} className="w-full rounded-2xl border border-slate-300 bg-white py-3 pl-12 pr-4 font-semibold outline-none transition focus:border-amber-500" />
               </label>
-              <Select value={statusFilter} onChange={setStatusFilter} options={statusOptions.map((status) => ({ value: status, label: status === 'all' ? copy.common.allStatuses : getWelfareStatusLabel(status) }))} />
+              <Select value={statusFilter} onChange={setStatusFilter} options={statusOptions.map((status) => ({ value: status, label: status === 'all' ? copy.common.allStatuses : getWelfareStatusLabel(status, language) }))} />
               <Select value={districtFilter} onChange={setDistrictFilter} options={[{ value: 'all', label: copy.common.allDistricts }, ...districtOptions]} />
               <Select value={talukaFilter} onChange={setTalukaFilter} options={[{ value: 'all', label: copy.common.allTalukas }, ...talukaOptions]} />
               <Select value={emergencyFilter} onChange={setEmergencyFilter} options={[{ value: 'all', label: 'All Cases' }, { value: 'emergency', label: 'Emergency' }, { value: 'normal', label: 'Normal' }]} />
               <Select value={priorityFilter} onChange={setPriorityFilter} options={priorityOptions.map((value) => ({ value, label: value === 'all' ? 'Priority' : value }))} />
-              <Select value={paymentFilter} onChange={setPaymentFilter} options={paymentOptions.map((value) => ({ value, label: value === 'all' ? 'Fund Status' : getWelfarePaymentStatusLabel(value) }))} />
+              <Select value={paymentFilter} onChange={setPaymentFilter} options={paymentOptions.map((value) => ({ value, label: value === 'all' ? 'Fund Status' : getWelfarePaymentStatusLabel(value, language) }))} />
               <button type="button" onClick={resetFilters} className="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 font-black text-slate-700 transition hover:bg-slate-50"><XCircle className="mr-2 h-4 w-4" /> Reset</button>
             </div>
             <div className="mt-4 grid gap-4 md:grid-cols-2">
-              <Select value={committeeFilter} onChange={setCommitteeFilter} options={committeeOptions.map((value) => ({ value, label: value === 'all' ? 'Committee Decision' : getWelfareCommitteeDecisionLabel(value) }))} />
+              <Select value={committeeFilter} onChange={setCommitteeFilter} options={committeeOptions.map((value) => ({ value, label: value === 'all' ? 'Committee Decision' : getWelfareCommitteeDecisionLabel(value, language) }))} />
             </div>
           </div>
 
@@ -273,7 +279,7 @@ function AdminWelfareApplicationsPage() {
           {loading ? (
             <div className="flex justify-center rounded-3xl border border-slate-200 bg-white p-12 shadow-sm"><Loader2 className="h-10 w-10 animate-spin text-amber-500" /></div>
           ) : message ? (
-            <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-800 shadow-sm"><h2 className="text-2xl font-black">Unable to load welfare cases</h2><p className="mt-3 font-semibold">{message}</p></div>
+            <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center text-red-800 shadow-sm"><h2 className="text-2xl font-black">Unable to load welfare cases</h2><p className="mt-3 font-semibold">{message}</p><button type="button" className="secondary-btn mt-4" onClick={() => void loadApplications()}>Try again</button></div>
           ) : filteredApplications.length === 0 ? (
             <div className="rounded-3xl border border-slate-200 bg-white p-10 text-center shadow-sm"><h2 className="text-2xl font-black text-slate-950">No welfare cases found</h2><p className="mx-auto mt-3 max-w-2xl text-slate-600">Selected filters ke according koi case nahi mila.</p></div>
           ) : (
@@ -287,7 +293,7 @@ function AdminWelfareApplicationsPage() {
 }
 
 function ApplicationListCard({ item }: { item: WelfareApplicationListItem }) {
-  const { copy } = useAdminProgramsCopy('welfare')
+  const { copy, language } = useAdminProgramsCopy('welfare')
   const details = item.details || {}
   return (
     <article className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
@@ -295,9 +301,9 @@ function ApplicationListCard({ item }: { item: WelfareApplicationListItem }) {
         <div className="space-y-4">
           <div className="flex flex-wrap items-center gap-3">
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">{item.application_no || 'Welfare Case'}</span>
-            <span className={`rounded-full border px-3 py-1 text-xs font-black ${getWelfareStatusClass(item.status)}`}>{getWelfareStatusLabel(item.status)}</span>
-            <span className={`rounded-full border px-3 py-1 text-xs font-black ${getWelfareCasePriorityClass(details)}`}>{getWelfareCasePriorityLabel(details)}</span>
-            <span className={`rounded-full border px-3 py-1 text-xs font-black ${getWelfareCommitteeDecisionClass(details.welfare_committee_decision)}`}>{getWelfareCommitteeDecisionLabel(details.welfare_committee_decision)}</span>
+            <span className={`rounded-full border px-3 py-1 text-xs font-black ${getWelfareStatusClass(item.status)}`}>{getWelfareStatusLabel(item.status, language)}</span>
+            <span className={`rounded-full border px-3 py-1 text-xs font-black ${getWelfareCasePriorityClass(details)}`}>{getWelfareCasePriorityLabel(details, language)}</span>
+            <span className={`rounded-full border px-3 py-1 text-xs font-black ${getWelfareCommitteeDecisionClass(details.welfare_committee_decision)}`}>{getWelfareCommitteeDecisionLabel(details.welfare_committee_decision, language)}</span>
           </div>
           <div>
             <h2 className="text-2xl font-black text-slate-950">{item.applicant_name}</h2>
@@ -309,7 +315,7 @@ function ApplicationListCard({ item }: { item: WelfareApplicationListItem }) {
             <p><strong>Taluka:</strong> {item.taluka || '-'}</p>
             <p><strong>Case Type:</strong> {details.case_type || '-'}</p>
             <p><strong>Required:</strong> {formatWelfareMoney(details.required_amount)}</p>
-            <p><strong>Fund:</strong> {getWelfarePaymentStatusLabel(details.payment_status)}</p>
+            <p><strong>Fund:</strong> {getWelfarePaymentStatusLabel(details.payment_status, language)}</p>
           </div>
           {item.admin_remarks ? <div className="rounded-2xl bg-slate-50 p-4 text-sm text-slate-700"><strong>Admin Remarks:</strong> {item.admin_remarks}</div> : null}
         </div>
@@ -322,8 +328,8 @@ function ApplicationListCard({ item }: { item: WelfareApplicationListItem }) {
   )
 }
 
-function StatCard({ title, value, icon }: { title: string; value: number; icon: ReactNode }) {
-  return <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">{icon}</div><p className="text-sm font-black uppercase tracking-[0.18em] text-slate-400">{title}</p><p className="mt-1 text-3xl font-black text-slate-950">{value}</p></div>
+function StatCard({ title, value, icon }: { title: string; value: number | null; icon: ReactNode }) {
+  return <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm"><div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-700">{icon}</div><p className="text-sm font-black uppercase tracking-[0.18em] text-slate-400">{title}</p><p className="mt-1 text-3xl font-black text-slate-950">{value ?? '—'}</p></div>
 }
 
 function Select({ value, onChange, options }: { value: string; onChange: (value: string) => void; options: Array<{ value: string; label: string }> }) {
@@ -362,14 +368,14 @@ function normalizeValue(value?: string | null) {
   return value?.trim().toLowerCase() || ''
 }
 
-function exportWelfareCsv(items: WelfareApplicationListItem[]) {
+function exportWelfareCsv(items: WelfareApplicationListItem[], language: import('../../../lib/program-status-i18n').ProgramLabelLanguage) {
   const headers = ['serial', 'application_no', 'status', 'applicant_name', 'membership_no', 'phone', 'district', 'taluka', 'case_type', 'required_amount', 'approved_amount', 'fund_status', 'committee_decision', 'submitted_at', 'admin_remarks'] as const
   const rows = items.map((item, index) => {
     const details = item.details || {}
     return {
       serial: index + 1,
       application_no: item.application_no || '',
-      status: getWelfareStatusLabel(item.status),
+      status: getWelfareStatusLabel(item.status, language),
       applicant_name: item.applicant_name,
       membership_no: item.membership_no,
       phone: item.phone,
@@ -378,8 +384,8 @@ function exportWelfareCsv(items: WelfareApplicationListItem[]) {
       case_type: details.case_type || '',
       required_amount: details.required_amount || '',
       approved_amount: item.approved_amount ?? '',
-      fund_status: getWelfarePaymentStatusLabel(details.payment_status),
-      committee_decision: getWelfareCommitteeDecisionLabel(details.welfare_committee_decision),
+      fund_status: getWelfarePaymentStatusLabel(details.payment_status, language),
+      committee_decision: getWelfareCommitteeDecisionLabel(details.welfare_committee_decision, language),
       submitted_at: item.submitted_at ? new Date(item.submitted_at).toLocaleString() : '',
       admin_remarks: item.admin_remarks || '',
     }

@@ -3,18 +3,12 @@ export type ProgramLabelLanguage = 'en' | 'ur' | 'sd'
 
 export type ProgramLabelMap = Partial<Record<ProgramLabelLanguage, string>>
 
-const STORAGE_KEY = 'jas_language'
-
+// Effective document language, not a browser preference that may differ from SSR.
+// React callers can pass their context language explicitly.
 export function getStoredProgramLanguage(): ProgramLabelLanguage {
-  if (typeof window === 'undefined') return 'en'
-
-  const value = window.localStorage.getItem(STORAGE_KEY)
-
-  if (value === 'ur' || value === 'sd' || value === 'en') {
-    return value
-  }
-
-  return 'en'
+  if (typeof document === 'undefined') return 'en'
+  const value=document.documentElement.lang
+  return value==='ur' || value==='sd' ? value : 'en'
 }
 
 export function localizedProgramLabel(

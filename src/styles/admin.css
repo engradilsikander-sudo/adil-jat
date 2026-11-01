@@ -621,3 +621,13 @@ button.admin-quick-action {
     border-radius: 1.35rem;
   }
 }
+
+/* JAS P0.2: size grids against the content column, never clip controls. */
+.admin-filter-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%, 12rem),1fr)); gap: 1rem; }
+.admin-filter-grid > *, .admin-filter-grid :is(input,select,label) { min-width: 0; width: 100%; max-width: 100%; }
+.admin-filter-grid > :first-child { grid-column: 1 / -1; }
+.admin-stat-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%, 9rem),1fr)); gap: 1rem; }
+.admin-sidebar-item-label { overflow-wrap: normal; word-break: normal; }
+.admin-sidebar-item.is-disabled { flex-wrap: wrap; }
+.admin-sidebar-item.is-disabled .admin-sidebar-item-label { flex-basis: 6rem; }
+.admin-shell-content fieldset { min-width: 0; }

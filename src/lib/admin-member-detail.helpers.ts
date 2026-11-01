@@ -16,6 +16,7 @@ import type {
 export type MemberStatus = "pending" | "approved" | "rejected";
 
 export type Member = {
+  membership_fee_required?: boolean;
   id: string;
   user_id: string;
   member_no: string | null;
@@ -204,6 +205,7 @@ export const initialOfficeBearerIssueForm: OfficeBearerIssueForm = {
 };
 
 export const MEMBER_SELECT_COLUMNS = [
+  "membership_fee_required",
   "id",
   "user_id",
   "member_no",

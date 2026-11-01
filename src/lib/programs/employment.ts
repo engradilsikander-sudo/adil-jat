@@ -300,12 +300,12 @@ const trainingInterestLabelTranslations: Record<TrainingInterest, ProgramLabelMa
   not_interested: { en: 'Not Interested', ur: 'دلچسپی نہیں', sd: 'دلچسپي نه آهي' },
 }
 
-export function getEmploymentStatusLabel(status: string) {
+export function getEmploymentStatusLabel(status: string, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   const typedStatus = status as EmploymentStatus
 
   return localizedProgramLabel(
     employmentStatusLabelTranslations[typedStatus],
-    status,
+    status, language,
   )
 }
 
@@ -323,32 +323,32 @@ export function getEmploymentStatusClass(status: string) {
   return classes[status] || 'border-slate-200 bg-slate-50 text-slate-700'
 }
 
-export function getEmploymentDocumentLabel(type: string) {
+export function getEmploymentDocumentLabel(type: string, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   const typedType = type as EmploymentDocumentType
   const fallback =
     employmentDocumentOptions.find((item) => item.type === type)?.label || type
 
-  return localizedProgramLabel(employmentDocumentLabelTranslations[typedType], fallback)
+  return localizedProgramLabel(employmentDocumentLabelTranslations[typedType], fallback, language)
 }
 
-export function getShortlistStatusLabel(value?: string | null) {
+export function getShortlistStatusLabel(value?: string | null, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   const typedValue = value as CandidateShortlistStatus
   const fallback =
     shortlistStatusOptions.find((item) => item.value === value)?.label ||
     'Not Shortlisted'
 
-  return localizedProgramLabel(shortlistStatusLabelTranslations[typedValue], fallback)
+  return localizedProgramLabel(shortlistStatusLabelTranslations[typedValue], fallback, language)
 }
 
-export function getEmploymentTypeLabel(value?: string | null) {
+export function getEmploymentTypeLabel(value?: string | null, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   const typedValue = value as EmploymentType
   const fallback =
     employmentTypeOptions.find((item) => item.value === value)?.label || 'Any'
 
-  return localizedProgramLabel(employmentTypeLabelTranslations[typedValue], fallback)
+  return localizedProgramLabel(employmentTypeLabelTranslations[typedValue], fallback, language)
 }
 
-export function getCurrentEmploymentStatusLabel(value?: string | null) {
+export function getCurrentEmploymentStatusLabel(value?: string | null, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   const typedValue = value as EmploymentCurrentStatus
   const fallback =
     currentEmploymentStatusOptions.find((item) => item.value === value)?.label ||
@@ -356,11 +356,11 @@ export function getCurrentEmploymentStatusLabel(value?: string | null) {
 
   return localizedProgramLabel(
     currentEmploymentStatusLabelTranslations[typedValue],
-    fallback,
+    fallback, language,
   )
 }
 
-export function getTrainingInterestLabel(value?: string | null) {
+export function getTrainingInterestLabel(value?: string | null, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   const typedValue = value as TrainingInterest
   const fallback =
     trainingInterestOptions.find((item) => item.value === value)?.label ||
@@ -368,14 +368,14 @@ export function getTrainingInterestLabel(value?: string | null) {
 
   return localizedProgramLabel(
     trainingInterestLabelTranslations[typedValue],
-    fallback,
+    fallback, language,
   )
 }
 
-export function getEmploymentDocumentStatusLabel(status: string) {
+export function getEmploymentDocumentStatusLabel(status: string, language?: import('../program-status-i18n').ProgramLabelLanguage) {
   return localizedProgramLabel(
     employmentDocumentStatusLabelTranslations[status],
-    status,
+    status, language,
   )
 }
 

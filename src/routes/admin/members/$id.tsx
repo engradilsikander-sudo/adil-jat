@@ -1,4 +1,4 @@
-import { FreeMembershipNotice } from '../../../components/FreeMembershipNotice';
+import { MembershipFeeReview } from '../../../components/admin/member-detail/MembershipFeeReview';
 // src/routes/admin/members/$id.tsx
 import {
   Link,
@@ -874,7 +874,7 @@ function AdminMemberApplicationPage({ id }: { id: string }) {
 
           <StatusPanel member={member} />
 
-          <FreeMembershipNotice />
+          <MembershipFeeReview memberId={member.id} userId={member.user_id} feeRequired={member.membership_fee_required !== false} />
 
           <AdminMemberProfilePanel
             copy={copy}

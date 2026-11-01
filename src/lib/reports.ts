@@ -1,3 +1,4 @@
+import { fetchAllRows } from './admin/data-access'
 // src/lib/reports.ts
 import { supabase } from './supabase/client'
 import { filterRowsByAreaAccess, loadCurrentAdminAreaAccess } from './area-permissions'
@@ -140,32 +141,25 @@ export async function loadReportsCenterData(): Promise<ReportsCenterData> {
     throw new Error(areaAccess.message)
   }
 
-  const [membersResult, applicationsResult, donationsResult, expensesResult] =
-    await Promise.all([
-      supabase
-        .from('members')
-        .select('id,status,district,taluka,created_at,approved_at,member_no')
-        .returns<MemberReportRow[]>(),
-      supabase
-        .from('program_applications')
-        .select(
-          'id,program_key,status,district,taluka,approved_amount,created_at,submitted_at',
-        )
-        .in('program_key', programKeys)
-        .returns<ProgramApplicationReportRow[]>(),
-      supabase
-        .from('finance_donations')
-        .select(
-          'id,amount,purpose,payment_method,status,district,taluka,created_at,approved_at',
-        )
-        .returns<FinanceDonationReportRow[]>(),
-      supabase
-        .from('finance_expenses')
-        .select(
-          'id,amount,category,linked_program_key,payment_method,status,district,taluka,created_at,paid_at',
-        )
-        .returns<FinanceExpenseReportRow[]>(),
-    ])
+  const [membersResult, applicationsResult, donationsResult, expensesResult, feesResult] = await Promise.all([
+    fetchAllRows<MemberReportRow>((from,to) => supabase.from('members')
+      .select('id,status,district,taluka,created_at,approved_at,member_no', { count: 'exact' })
+      .order('created_at').order('id').range(from,to).returns<MemberReportRow[]>()),
+    fetchAllRows<ProgramApplicationReportRow>((from,to) => supabase.from('program_applications')
+      .select('id,program_key,status,district,taluka,approved_amount,created_at,submitted_at', { count: 'exact' })
+      .in('program_key',programKeys).order('created_at').order('id').range(from,to).returns<ProgramApplicationReportRow[]>()),
+    fetchAllRows<FinanceDonationReportRow>((from,to) => supabase.from('finance_donations')
+      .select('id,amount,purpose,payment_method,status,district,taluka,created_at,approved_at', { count: 'exact' })
+      .order('created_at').order('id').range(from,to).returns<FinanceDonationReportRow[]>()),
+    fetchAllRows<FinanceExpenseReportRow>((from,to) => supabase.from('finance_expenses')
+      .select('id,amount,category,linked_program_key,payment_method,status,district,taluka,created_at,paid_at', { count: 'exact' })
+      .order('created_at').order('id').range(from,to).returns<FinanceExpenseReportRow[]>()),
+    fetchAllRows<{ id: string; status: string; total_amount: number; members: { district: string; taluka: string | null } }>((from,to) => supabase.from('membership_payments')
+      .select('id,status,total_amount,members!inner(district,taluka)', { count: 'exact' })
+      .order('created_at').order('id').range(from,to).returns<{ id: string; status: string; total_amount: number; members: { district: string; taluka: string | null } }[]>()),
+  ])
+  if (feesResult.error) throw feesResult.error
+  const fees = filterRowsByAreaAccess(feesResult.data.map(row => ({ ...row, ...row.members })), areaAccess)
 
   if (membersResult.error) throw membersResult.error
   if (applicationsResult.error) throw applicationsResult.error
@@ -213,6 +207,8 @@ export async function loadReportsCenterData(): Promise<ReportsCenterData> {
   return {
     generatedAt: new Date().toISOString(),
     metrics: [
+      { label: 'Membership Fees Received', value: formatCurrency(fees.filter(row => row.status === 'paid').reduce((total,row) => total + Number(row.total_amount),0)), helper: 'Verified fees, recorded separately from donations' },
+      { label: 'Membership Fees Pending', value: fees.filter(row => row.status === 'pending').length, helper: 'Awaiting payment verification; waived fees are not receipts' },
       {
         label: 'Total Members',
         value: members.length,

@@ -1,3 +1,5 @@
+import { adminErrorMessage } from '../../lib/admin/data-access'
+import { LoadFailure } from '../../components/admin/LoadFailure'
 // src/routes/admin/cms.tsx
 import { createFileRoute, useNavigate, Outlet, useRouterState } from '@tanstack/react-router'
 import {
@@ -56,7 +58,7 @@ function AdminCmsPage() {
       const data = await fetchAllCmsPagesForAdmin()
       setPages(data)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load CMS pages.')
+      setError(adminErrorMessage(err, 'Failed to load CMS pages.'))
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -111,6 +113,8 @@ function AdminCmsPage() {
       </AdminShell>
     )
   }
+
+  if (error) return <AdminShell title="CMS Pages"><LoadFailure error={new Error(error)} onRetry={() => void loadPages()} /></AdminShell>
 
   return (
     <AdminShell title="CMS Pages" subtitle="Manage multilingual public website pages.">
