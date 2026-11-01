@@ -43,11 +43,11 @@
     "@tanstack/match-sorter-utils": "latest",
     "@tanstack/react-form": "latest",
     "@tanstack/react-query": "latest",
-    "@tanstack/react-router": "1.170.11",
+    "@tanstack/react-router": "1.170.46",
     "@tanstack/react-router-ssr-query": "latest",
-    "@tanstack/react-start": "1.168.20",
+    "@tanstack/react-start": "1.169.4",
     "@tanstack/react-table": "latest",
-    "@tanstack/router-plugin": "1.168.14",
+    "@tanstack/router-plugin": "1.168.48",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "html-to-image": "^1.11.13",
@@ -80,7 +80,7 @@
     "jsdom": "^28.1.0",
     "supabase": "^2.100.0",
     "typescript": "^6.0.2",
-    "vite": "8.0.16",
+    "vite": "8.3.5",
     "vitest": "^4.1.5"
   },
   "pnpm": {
