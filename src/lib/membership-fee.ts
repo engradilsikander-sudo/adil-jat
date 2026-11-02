@@ -19,12 +19,10 @@ export const MEMBERSHIP_RECEIPT_ALLOWED_TYPES = [
 export const MEMBERSHIP_PAYMENT_QR_IMAGE_PATH = '/jas/membership-payment-qr.jpg'
 
 export const MEMBERSHIP_MANUAL_PAYMENT_DETAILS = {
-  bankName: 'Mobilink Microfinance Bank',
-  accountTitle: 'Abdur shop',
-  accountNumber: '01333300393',
-  iban: 'PK08JCMA1905921333300393',
-  paymentNetwork: 'JazzCash / Raast',
-  tillId: '983365478',
+  bankName: 'Easypaisa',
+  accountTitle: 'Adil Sikandar',
+  accountNumber: '123456789',
+  iban: 'PK123456789',
 } as const
 
 export type MembershipPaymentStatus =
