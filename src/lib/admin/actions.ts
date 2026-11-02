@@ -131,6 +131,10 @@ export const approveMemberAction = createServerFn({ method: "POST" })
         throw new Error(error.message);
       }
 
+      if (!approved || approved.id !== data.memberId || approved.status !== "approved") {
+        throw new Error("Review was not confirmed. Refresh the application before trying again.");
+      }
+
       return {
         ok: true,
         action: "approved" as const,
@@ -165,6 +169,10 @@ export const rejectMemberAction = createServerFn({ method: "POST" })
 
       if (error) {
         throw new Error(error.message);
+      }
+
+      if (!rejected || rejected.id !== data.memberId || rejected.status !== "rejected") {
+        throw new Error("Review was not confirmed. Refresh the application before trying again.");
       }
 
       return {

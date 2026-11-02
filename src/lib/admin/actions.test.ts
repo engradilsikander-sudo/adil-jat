@@ -32,6 +32,9 @@ vi.mock('../supabase/admin', () => ({
       if (table === 'members') {
         return {
           update: memberUpdate,
+          select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: {
+            id: '11111111-1111-4111-8111-111111111111', status: 'pending', full_name: 'Member A'
+          }, error: null }) }) }),
         }
       }
 
@@ -43,7 +46,7 @@ vi.mock('../supabase/admin', () => ({
   }),
 }))
 
-import { updateMemberApplicationAction } from './actions'
+import { updateMemberApplicationAction, approveMemberAction, rejectMemberAction } from './actions'
 
 const memberId = '11111111-1111-4111-8111-111111111111'
 const reviewerId = 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa'
@@ -110,3 +113,26 @@ it('fails closed when the scoped database RPC rejects the edit', async () => {
 
   expect(memberUpdate).not.toHaveBeenCalled()
 })
+
+for (const [name, action, status] of [
+  ['approve', approveMemberAction, 'approved'],
+  ['reject', rejectMemberAction, 'rejected'],
+] as const) {
+  const invoke = () => (action as unknown as (arg: { data: Record<string, unknown> }) => Promise<unknown>)({
+    data: { memberId, accessToken: 'valid-access-token', rejectionReason: 'Test rejection' },
+  })
+  it(`${name}: accepts only the confirmed target and status`, async () => {
+    rpc.mockResolvedValueOnce({ data: { id: memberId, status }, error: null })
+    await expect(invoke()).resolves.toMatchObject({ ok: true })
+  })
+  for (const data of [null, {}, [], { id: 'wrong', status }, { id: memberId, status: 'pending' }]) {
+    it(`${name}: rejects empty or inconsistent RPC results ${JSON.stringify(data)}`, async () => {
+      rpc.mockResolvedValueOnce({ data, error: null })
+      await expect(invoke()).rejects.toThrow('Review was not confirmed')
+    })
+  }
+  it(`${name}: propagates database conflict without success`, async () => {
+    rpc.mockResolvedValueOnce({ data: null, error: { message: 'Application is no longer pending' } })
+    await expect(invoke()).rejects.toThrow('no longer pending')
+  })
+}
