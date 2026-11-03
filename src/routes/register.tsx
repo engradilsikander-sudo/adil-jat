@@ -46,7 +46,9 @@ function RegisterPage() {
   const navigate = useNavigate()
   const { t, direction, language } = useI18n()
 
-  const [loading, setLoading] = useState(true)
+  const [bootstrapStatus, setBootstrapStatus] = useState<'loading' | 'ready' | 'error' | 'login'>('loading')
+  const loading = bootstrapStatus === 'loading'
+  const bootstrapRun = useRef(0)
   const [submitting, setSubmitting] = useState(false)
   const [userId, setUserId] = useState('')
   const [existingMember, setExistingMember] = useState<ExistingMember | null>(null)
@@ -92,13 +94,13 @@ function RegisterPage() {
   const isLastStep = currentStep === registerFormSteps.length - 1
 
   const serializedForm = JSON.stringify(form)
-  const dirty = !loading && !locked && !submitted.current && (serializedForm !== savedForm || Boolean(photo) || Boolean(receipt))
+  const dirty = bootstrapStatus === 'ready' && !locked && !submitted.current && (serializedForm !== savedForm || Boolean(photo) || Boolean(receipt))
   useBlocker({
     shouldBlockFn: () => dirty && !window.confirm(copy.leave),
     enableBeforeUnload: dirty,
   })
   useEffect(() => {
-    if (!autoSave || loading || submitting || existingMember || !userId || submitted.current || serializedForm === savedForm) return
+    if (!autoSave || bootstrapStatus !== 'ready' || submitting || existingMember || !userId || submitted.current || serializedForm === savedForm) return
     const timer = setTimeout(() => {
       try {
         const savedAt = new Date().toISOString()
@@ -108,7 +110,7 @@ function RegisterPage() {
       } catch { setAutoSave(false); setError(t('register.draftSaveFailed')) }
     }, 1200)
     return () => clearTimeout(timer)
-  }, [autoSave, loading, submitting, existingMember, userId, serializedForm, savedForm, t])
+  }, [autoSave, bootstrapStatus, submitting, existingMember, userId, serializedForm, savedForm, t])
 
   const localizedSteps = useMemo(
     () =>
@@ -130,7 +132,8 @@ function RegisterPage() {
   const photoSrc = photoPreview || existingPhotoSignedUrl
 
   useEffect(() => {
-    loadExisting()
+    void loadExisting()
+    return () => { ++bootstrapRun.current }
   }, [])
 
   useEffect(() => {
@@ -142,85 +145,104 @@ function RegisterPage() {
   }, [photoPreview])
 
   async function loadExisting() {
-    setLoading(true)
+    const run = ++bootstrapRun.current
+    const isCurrent = () => bootstrapRun.current === run
+    setBootstrapStatus('loading')
     setError('')
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser()
+    try {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser()
+      if (!isCurrent()) return
 
-    if (userError || !user) {
-      navigate({ to: '/login' })
-      return
-    }
+      if (userError || !user) {
+        // Navigation may reject or remain pending. Resolve this route's loading
+        // state first, without granting access to an unauthenticated form.
+        setBootstrapStatus('login')
+        await navigate({ to: '/login' })
+        return
+      }
 
-    setUserId(user.id)
+      const { data: rawData, error: memberError } = await supabase
+        .from('members')
+        .select(
+          [
+            'id',
+            'membership_fee_required',
+            'status',
+            'address',
+            'date_of_birth',
+            'gender',
+            'education',
+            'blood_group',
+            'emergency_contact_name',
+            'emergency_contact_relation',
+            'emergency_contact_mobile',
+            'declaration_accepted',
+            'full_name',
+            'father_name',
+            'cnic',
+            'mobile',
+            'district',
+            'taluka',
+            'profession',
+            'caste_branch',
+            'photo_url',
+          ].join(', '),
+        )
+        .eq('user_id', user.id)
+        .maybeSingle()
 
-    const { data: rawData, error: memberError } = await supabase
-      .from('members')
-      .select(
-        [
-          'id',
-          'membership_fee_required',
-          'status',
-          'address',
-          'date_of_birth',
-          'gender',
-          'education',
-          'blood_group',
-          'emergency_contact_name',
-          'emergency_contact_relation',
-          'emergency_contact_mobile',
-          'declaration_accepted',
-          'full_name',
-          'father_name',
-          'cnic',
-          'mobile',
-          'district',
-          'taluka',
-          'profession',
-          'caste_branch',
-          'photo_url',
-        ].join(', '),
-      )
-      .eq('user_id', user.id)
-      .maybeSingle()
+      if (!isCurrent()) return
+      if (memberError) throw memberError
 
-    if (memberError) {
-      setError(memberError.message)
-      setLoading(false)
-      return
-    }
+      const data = rawData as unknown as ExistingMember | null
+      let loadedPayment: MembershipPayment | null = null
+      let signedPhotoUrl: string | null = null
+      let loadedForm = { ...initialRegisterForm }
+      let savedAt = ''
 
-    const data = rawData as unknown as ExistingMember | null
+      if (data) {
+        const result = await supabase.from('membership_payments').select('*').eq('member_id', data.id).maybeSingle()
+        if (!isCurrent()) return
+        if (result.error) throw result.error
+        loadedPayment = result.data as MembershipPayment | null
+        loadedForm = memberToRegisterForm(data)
 
-    if (data) {
-      const result = await supabase.from('membership_payments').select('*').eq('member_id',data.id).maybeSingle()
-      if (result.error) { setError(adminErrorMessage(result.error)); setLoading(false); return }
-      setPayment(result.data as MembershipPayment | null)
+        if (data.photo_url) {
+          const { data: signed, error: photoError } = await supabase.storage
+            .from('member-photos')
+            .createSignedUrl(data.photo_url, 60 * 60)
+          if (!isCurrent()) return
+          if (photoError) throw photoError
+          signedPhotoUrl = signed?.signedUrl ?? null
+        }
+      } else {
+        const draft = readRegisterDraft(user.id)
+        if (draft) {
+          loadedForm = { ...initialRegisterForm, ...draft.form }
+          savedAt = draft.savedAt
+        }
+      }
+
+      if (!isCurrent()) return
+      // Publish one complete snapshot; a failed or obsolete run cannot expose
+      // a partially initialized application or overwrite a newer retry.
+      const serialized = JSON.stringify(loadedForm)
+      setUserId(user.id)
       setExistingMember(data)
-      setForm(memberToRegisterForm(data))
-      setSavedForm(JSON.stringify(memberToRegisterForm(data)))
-
-      if (data.photo_url) {
-        const { data: signed } = await supabase.storage
-          .from('member-photos')
-          .createSignedUrl(data.photo_url, 60 * 60)
-
-        setExistingPhotoSignedUrl(signed?.signedUrl ?? null)
-      }
-    } else {
-      const draft = readRegisterDraft(user.id)
-
-      if (draft) {
-        setForm({ ...initialRegisterForm, ...draft.form })
-        setSavedForm(JSON.stringify({ ...initialRegisterForm, ...draft.form }))
-        setDraftSavedAt(draft.savedAt)
-      }
+      setPayment(loadedPayment)
+      setForm(loadedForm)
+      setSavedForm(serialized)
+      setDraftSavedAt(savedAt)
+      setExistingPhotoSignedUrl(signedPhotoUrl)
+      setBootstrapStatus('ready')
+    } catch {
+      if (!isCurrent()) return
+      setBootstrapStatus('error')
     }
-
-    setLoading(false)
   }
 
   function updateField<K extends keyof RegisterFormState>(
@@ -599,6 +621,22 @@ function RegisterPage() {
           </div>
         </main>
       </>
+    )
+  }
+
+  if (bootstrapStatus !== 'ready') {
+    return (
+      <main className="reg-page" dir={direction}>
+        <div className="reg-card">
+          <h1 className="reg-title">{t('register.title')}</h1>
+          <div className="reg-banner reg-banner--error" role="alert">
+            {bootstrapStatus === 'login' ? t('register.error.loginRequired') : copy.loadFailed}
+          </div>
+          <button type="button" className="reg-btn-primary" onClick={() => void loadExisting()}>
+            {copy.retry}
+          </button>
+        </div>
+      </main>
     )
   }
 

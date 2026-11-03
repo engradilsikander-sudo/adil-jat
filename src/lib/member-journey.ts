@@ -1,5 +1,7 @@
 export const journeyCopy = {
   en: {
+    loadFailed: "We couldn't load your registration. Please try again.",
+    retry: "Try again",
     autoSave: 'Automatically save my draft on this device',
     storage: 'Drafts contain personal information, including CNIC and contact details. Save only on a device you trust. Turn off auto-save and use Clear draft to remove saved data.',
     photo: 'Photos are not saved in drafts. Select your photo again after returning.',
@@ -8,6 +10,8 @@ export const journeyCopy = {
     apply: 'Apply for membership', view: 'View application', revise: 'Revise application',
   },
   ur: {
+    loadFailed: "آپ کا رجسٹریشن فارم لوڈ نہیں ہو سکا۔ دوبارہ کوشش کریں۔",
+    retry: "دوبارہ کوشش کریں",
     autoSave: 'اس ڈیوائس پر میرا مسودہ خودکار طور پر محفوظ کریں',
     storage: 'مسودے میں شناختی کارڈ اور رابطے کی ذاتی معلومات شامل ہیں۔ صرف اپنی قابل اعتماد ڈیوائس پر محفوظ کریں۔ محفوظ معلومات مٹانے کے لیے خودکار محفوظ کرنا بند کرکے مسودہ صاف کریں۔',
     photo: 'مسودے میں تصویر محفوظ نہیں ہوتی۔ واپس آنے پر تصویر دوبارہ منتخب کریں۔',
@@ -16,6 +20,8 @@ export const journeyCopy = {
     apply: 'رکنیت کی درخواست دیں', view: 'درخواست دیکھیں', revise: 'درخواست درست کریں',
   },
   sd: {
+    loadFailed: "توهان جو رجسٽريشن فارم لوڊ نه ٿي سگهيو. ٻيهر ڪوشش ڪريو.",
+    retry: "ٻيهر ڪوشش ڪريو",
     autoSave: 'هن ڊيوائس تي منهنجو مسودو پاڻمرادو محفوظ ڪريو',
     storage: 'مسودي ۾ شناختي ڪارڊ ۽ رابطي جون ذاتي ڄاڻ شامل آهن. صرف ڀروسي واري ڊيوائس تي محفوظ ڪريو. محفوظ ڄاڻ هٽائڻ لاءِ پاڻمرادو محفوظ ڪرڻ بند ڪري مسودو صاف ڪريو.',
     photo: 'مسودي ۾ تصوير محفوظ نٿي ٿئي. واپس اچڻ تي تصوير ٻيهر چونڊيو.',
