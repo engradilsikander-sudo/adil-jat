@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { ComponentType, ReactNode } from 'react'
+import { I18nProvider } from '../lib/i18n'
 
 const state = vi.hoisted(() => ({
   loadedUpdateError: false,
@@ -96,11 +97,12 @@ import { Route } from './notifications'
 
 async function mount() {
   const Page = (Route as unknown as { component: ComponentType }).component
-  render(<Page />)
+  render(<I18nProvider><Page /></I18nProvider>)
   await screen.findByText('First update')
 }
 
 beforeEach(() => {
+  localStorage.clear()
   state.loadedUpdateError = false
   state.updates = []
 })
@@ -158,4 +160,15 @@ it('keeps loaded notifications visibly unread when the read mutation fails', asy
     ['loaded-1', 'loaded-2'],
   ])
   expect(updateEvents).toBe(0)
+})
+
+
+it('switches notification chrome to Urdu and exposes RTL direction', async () => {
+  localStorage.setItem('jas_language', 'ur')
+  await mount()
+
+  const heading = await screen.findByRole('heading', { name: 'اطلاعات' })
+  expect(heading.closest('main')?.getAttribute('dir')).toBe('rtl')
+  expect(screen.getByRole('button', { name: 'سب کو پڑھا ہوا نشان لگائیں' })).toBeTruthy()
+  expect(screen.getByText('ممبرشپ')).toBeTruthy()
 })

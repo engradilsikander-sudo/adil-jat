@@ -30,7 +30,6 @@ import {
   getProfileUpdateChangedFields,
   getProfileUpdatePhotoExtension,
   getProfileUpdateStatusClass,
-  getProfileUpdateStatusLabel,
   memberToProfileUpdateDraft,
   parseProfileUpdateChanges,
   validateProfileUpdateDraft,
@@ -100,6 +99,38 @@ const copy = {
     success: 'Your profile update request was submitted for admin review.',
     cancelled: 'The pending profile update request was cancelled.',
     back: 'Back to Dashboard',
+    identitySection: 'Identity',
+    addressSection: 'Address and Area',
+    profileSection: 'Profile and Card Details',
+    emergencySection: 'Emergency Contact',
+    selectDistrict: 'Select district',
+    selectTaluka: 'Select taluka',
+    selectGender: 'Select gender',
+    selectBloodGroup: 'Select blood group',
+    genderMale: 'Male',
+    genderFemale: 'Female',
+    genderOther: 'Other',
+    genderPreferNot: 'Prefer not to say',
+    statusPending: 'Pending',
+    statusApproved: 'Approved',
+    statusRejected: 'Rejected',
+    statusCancelled: 'Cancelled',
+    validation: {
+      required: 'This field is required.',
+      fullNameLength: 'Full name must be between 3 and 120 characters.',
+      fatherNameLength: 'Father name must be between 3 and 120 characters.',
+      cnicInvalid: 'Enter CNIC in 12345-1234567-1 format.',
+      mobileInvalid: 'Enter a valid Pakistani mobile number.',
+      emergencyMobileInvalid: 'Enter a valid emergency contact mobile number.',
+      addressIncomplete: 'Enter a complete residential address.',
+      addressTooLong: 'Address must be 500 characters or fewer.',
+      dateOfBirthInvalid: 'Enter a valid date of birth.',
+      genderInvalid: 'Select a valid gender option.',
+      bloodGroupInvalid: 'Select a valid blood group.',
+      talukaInvalid: 'Select a taluka from the selected district.',
+      photoTypeInvalid: 'Photo must be JPG, PNG, or WebP.',
+      photoTooLarge: 'Photo must be 2 MB or smaller.',
+    },
     migrationMissing:
       'Profile update requests are not available yet. Apply the Phase 7 database migration first.',
   },
@@ -142,6 +173,38 @@ const copy = {
     success: 'آپ کی پروفائل اپڈیٹ درخواست ایڈمن جائزے کے لیے جمع ہوگئی۔',
     cancelled: 'زیرِ جائزہ پروفائل اپڈیٹ درخواست منسوخ کردی گئی۔',
     back: 'ڈیش بورڈ پر واپس',
+    identitySection: 'شناخت',
+    addressSection: 'پتہ اور علاقہ',
+    profileSection: 'پروفائل اور کارڈ کی تفصیلات',
+    emergencySection: 'ایمرجنسی رابطہ',
+    selectDistrict: 'ضلع منتخب کریں',
+    selectTaluka: 'تعلقہ منتخب کریں',
+    selectGender: 'جنس منتخب کریں',
+    selectBloodGroup: 'بلڈ گروپ منتخب کریں',
+    genderMale: 'مرد',
+    genderFemale: 'خاتون',
+    genderOther: 'دیگر',
+    genderPreferNot: 'بتانا نہیں چاہتے',
+    statusPending: 'زیرِ جائزہ',
+    statusApproved: 'منظور شدہ',
+    statusRejected: 'مسترد',
+    statusCancelled: 'منسوخ',
+    validation: {
+      required: 'یہ فیلڈ لازمی ہے۔',
+      fullNameLength: 'مکمل نام 3 سے 120 حروف کے درمیان ہونا چاہیے۔',
+      fatherNameLength: 'والد کا نام 3 سے 120 حروف کے درمیان ہونا چاہیے۔',
+      cnicInvalid: 'CNIC کو 12345-1234567-1 فارمیٹ میں درج کریں۔',
+      mobileInvalid: 'درست پاکستانی موبائل نمبر درج کریں۔',
+      emergencyMobileInvalid: 'درست ایمرجنسی رابطہ موبائل نمبر درج کریں۔',
+      addressIncomplete: 'مکمل رہائشی پتہ درج کریں۔',
+      addressTooLong: 'پتہ 500 حروف یا اس سے کم ہونا چاہیے۔',
+      dateOfBirthInvalid: 'درست تاریخ پیدائش درج کریں۔',
+      genderInvalid: 'درست جنس کا آپشن منتخب کریں۔',
+      bloodGroupInvalid: 'درست بلڈ گروپ منتخب کریں۔',
+      talukaInvalid: 'منتخب ضلع سے تعلقہ منتخب کریں۔',
+      photoTypeInvalid: 'تصویر JPG، PNG یا WebP ہونی چاہیے۔',
+      photoTooLarge: 'تصویر 2 MB یا اس سے کم ہونی چاہیے۔',
+    },
     migrationMissing:
       'پروفائل اپڈیٹ سروس ابھی دستیاب نہیں۔ پہلے Phase 7 ڈیٹابیس مائیگریشن چلائیں۔',
   },
@@ -184,6 +247,38 @@ const copy = {
     success: 'توهان جي پروفائل اپڊيٽ درخواست ايڊمن جائزي لاءِ جمع ٿي وئي.',
     cancelled: 'جائزي هيٺ پروفائل اپڊيٽ درخواست رد ڪئي وئي.',
     back: 'ڊيش بورڊ ڏانهن واپس',
+    identitySection: 'سڃاڻپ',
+    addressSection: 'پتو ۽ علائقو',
+    profileSection: 'پروفائل ۽ ڪارڊ جا تفصيل',
+    emergencySection: 'ايمرجنسي رابطو',
+    selectDistrict: 'ضلعو چونڊيو',
+    selectTaluka: 'تعلقو چونڊيو',
+    selectGender: 'جنس چونڊيو',
+    selectBloodGroup: 'بلڊ گروپ چونڊيو',
+    genderMale: 'مرد',
+    genderFemale: 'عورت',
+    genderOther: 'ٻيو',
+    genderPreferNot: 'ٻڌائڻ نٿا چاهيو',
+    statusPending: 'جائزي هيٺ',
+    statusApproved: 'منظور ٿيل',
+    statusRejected: 'رد ٿيل',
+    statusCancelled: 'منسوخ',
+    validation: {
+      required: 'هي فيلڊ لازمي آهي۔',
+      fullNameLength: 'مڪمل نالو 3 کان 120 اکرن جي وچ ۾ هجڻ گهرجي۔',
+      fatherNameLength: 'والد جو نالو 3 کان 120 اکرن جي وچ ۾ هجڻ گهرجي۔',
+      cnicInvalid: 'CNIC کي 12345-1234567-1 فارميٽ ۾ داخل ڪريو۔',
+      mobileInvalid: 'درست پاڪستاني موبائل نمبر داخل ڪريو۔',
+      emergencyMobileInvalid: 'درست ايمرجنسي رابطو موبائل نمبر داخل ڪريو۔',
+      addressIncomplete: 'مڪمل رهائشي پتو داخل ڪريو۔',
+      addressTooLong: 'پتو 500 اکر يا ان کان گهٽ هجڻ گهرجي۔',
+      dateOfBirthInvalid: 'درست ڄمڻ جي تاريخ داخل ڪريو۔',
+      genderInvalid: 'درست جنس جو آپشن چونڊيو۔',
+      bloodGroupInvalid: 'درست بلڊ گروپ چونڊيو۔',
+      talukaInvalid: 'چونڊيل ضلعي مان تعلقو چونڊيو۔',
+      photoTypeInvalid: 'تصوير JPG، PNG يا WebP هجڻ گهرجي۔',
+      photoTooLarge: 'تصوير 2 MB يا ان کان گهٽ هجڻ گهرجي۔',
+    },
     migrationMissing:
       'پروفائل اپڊيٽ سروس اڃا دستياب ناهي. پهرين Phase 7 ڊيٽابيس مائيگريشن هلائيو.',
   },
@@ -379,7 +474,7 @@ function ProfileUpdatePage() {
     setError('')
     setSuccess('')
 
-    const validation = validateProfileUpdateDraft(draft, photo)
+    const validation = validateProfileUpdateDraft(draft, photo, text.validation)
     setErrors(validation.errors)
 
     if (!validation.valid) {
@@ -599,7 +694,7 @@ function ProfileUpdatePage() {
           </div>
 
           <div className="mt-6 space-y-7">
-            <FormSection title="Identity">
+            <FormSection title={text.identitySection}>
               <div className="grid gap-4 md:grid-cols-2">
                 <FormField
                   label={t('register.field.fullName')}
@@ -659,7 +754,7 @@ function ProfileUpdatePage() {
               </div>
             </FormSection>
 
-            <FormSection title="Address and Area">
+            <FormSection title={text.addressSection}>
               <div className="grid gap-4 md:grid-cols-2">
                 <FormField
                   label={t('register.field.district')}
@@ -672,7 +767,7 @@ function ProfileUpdatePage() {
                     className="profile-update-input"
                     aria-invalid={Boolean(errors.district)}
                   >
-                    <option value="">Select district</option>
+                    <option value="">{text.selectDistrict}</option>
                     {sindhDistricts.map((district) => (
                       <option key={district} value={district}>
                         {district}
@@ -691,7 +786,7 @@ function ProfileUpdatePage() {
                     className="profile-update-input"
                     aria-invalid={Boolean(errors.taluka)}
                   >
-                    <option value="">Select taluka</option>
+                    <option value="">{text.selectTaluka}</option>
                     {talukaOptions.map((taluka) => (
                       <option key={taluka} value={taluka}>
                         {taluka}
@@ -715,7 +810,7 @@ function ProfileUpdatePage() {
               </div>
             </FormSection>
 
-            <FormSection title="Profile and Card Details">
+            <FormSection title={text.profileSection}>
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <FormField
                   label={t('register.field.profession')}
@@ -772,10 +867,10 @@ function ProfileUpdatePage() {
                     className="profile-update-input"
                     aria-invalid={Boolean(errors.gender)}
                   >
-                    <option value="">Select gender</option>
+                    <option value="">{text.selectGender}</option>
                     {genderOptions.map((option) => (
                       <option key={option} value={option}>
-                        {option}
+                        {getProfileGenderLabel(option, text)}
                       </option>
                     ))}
                   </select>
@@ -805,7 +900,7 @@ function ProfileUpdatePage() {
                     className="profile-update-input"
                     aria-invalid={Boolean(errors.blood_group)}
                   >
-                    <option value="">Select blood group</option>
+                    <option value="">{text.selectBloodGroup}</option>
                     {bloodGroupOptions.map((option) => (
                       <option key={option} value={option}>
                         {option}
@@ -816,7 +911,7 @@ function ProfileUpdatePage() {
               </div>
             </FormSection>
 
-            <FormSection title="Emergency Contact">
+            <FormSection title={text.emergencySection}>
               <div className="grid gap-4 md:grid-cols-3">
                 <FormField
                   label={t('register.field.contactName')}
@@ -1000,6 +1095,11 @@ function ProfileUpdatePage() {
           background: rgb(248 250 252);
           color: rgb(100 116 139);
         }
+        @media (max-width: 768px) {
+          .profile-update-input {
+            font-size: 1rem;
+          }
+        }
       `}</style>
     </main>
   )
@@ -1112,6 +1212,27 @@ function PhotoBox({
   )
 }
 
+function getProfileGenderLabel(
+  option: string,
+  text: (typeof copy)[keyof typeof copy],
+) {
+  if (option === 'Male') return text.genderMale
+  if (option === 'Female') return text.genderFemale
+  if (option === 'Other') return text.genderOther
+  if (option === 'Prefer not to say') return text.genderPreferNot
+  return option
+}
+
+function getLocalizedProfileStatusLabel(
+  status: ProfileUpdateRequest['status'],
+  text: (typeof copy)[keyof typeof copy],
+) {
+  if (status === 'approved') return text.statusApproved
+  if (status === 'rejected') return text.statusRejected
+  if (status === 'cancelled') return text.statusCancelled
+  return text.statusPending
+}
+
 function RequestHistoryCard({
   request,
   text,
@@ -1139,7 +1260,7 @@ function RequestHistoryCard({
             )}`}
           >
             <StatusIcon className="h-3.5 w-3.5" />
-            {getProfileUpdateStatusLabel(request.status)}
+            {getLocalizedProfileStatusLabel(request.status, text)}
           </span>
           <p className="mt-3 text-sm font-black text-slate-900">
             {request.member_no || request.member_name}

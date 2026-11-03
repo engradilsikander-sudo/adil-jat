@@ -10,12 +10,12 @@ import {
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import {
-  formatNotificationDate,
   getSafeNotificationActionUrl,
-  getNotificationCategoryLabel,
   getNotificationTone,
   type UserNotification,
 } from '../lib/notifications'
+import { useI18n, type AppLanguage } from '../lib/i18n'
+import { mobileUxCopy, type MobileUxCopy } from '../lib/i18n/mobile-ux-copy'
 import { supabase } from '../lib/supabase/client'
 
 export const Route = createFileRoute('/notifications')({
@@ -26,6 +26,8 @@ const NOTIFICATIONS_PAGE_SIZE = 50
 
 function NotificationsPage() {
   const navigate = useNavigate()
+  const { language, direction } = useI18n()
+  const text = mobileUxCopy[language].notifications
   const [items, setItems] = useState<UserNotification[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -169,11 +171,11 @@ function NotificationsPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen px-4 py-10">
+      <main className="min-h-screen px-4 py-10" dir={direction}>
         <div className="page-wrap rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
           <div className="flex items-center gap-3 text-sm font-bold text-slate-700">
             <Loader2 className="h-5 w-5 animate-spin text-emerald-700" />
-            Loading notifications...
+            {text.loading}
           </div>
         </div>
       </main>
@@ -181,7 +183,7 @@ function NotificationsPage() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-8 md:py-10">
+    <main className="min-h-screen px-4 py-8 md:py-10" dir={direction}>
       <div className="page-wrap space-y-6">
         <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
           <div className="bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900 p-6 text-white md:p-8">
@@ -189,14 +191,13 @@ function NotificationsPage() {
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-amber-200">
                   <Bell className="h-4 w-4" />
-                  In-app Updates
+                  {text.eyebrow}
                 </div>
                 <h1 className="mt-5 text-4xl font-black md:text-6xl">
-                  Notifications
+                  {text.title}
                 </h1>
                 <p className="mt-4 max-w-3xl text-base leading-8 text-white/70">
-                  Program status, donation verification aur important member
-                  updates yahan show honge.
+                  {text.subtitle}
                 </p>
               </div>
 
@@ -212,7 +213,7 @@ function NotificationsPage() {
                   ) : (
                     <CheckCircle2 className="h-4 w-4" />
                   )}
-                  Mark all read
+                  {text.markAllRead}
                 </button>
                 <button
                   type="button"
@@ -223,23 +224,23 @@ function NotificationsPage() {
                   <RefreshCw
                     className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`}
                   />
-                  Refresh
+                  {text.refresh}
                 </button>
                 <Link
                   to="/notification-preferences"
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/15 bg-white/10 px-5 text-sm font-black text-white no-underline transition hover:bg-white/20 visited:text-white"
                 >
                   <Settings className="h-4 w-4" />
-                  Preferences
+                  {text.preferences}
                 </Link>
               </div>
             </div>
           </div>
 
           <div className="grid gap-4 p-5 md:grid-cols-3 md:p-6">
-            <StatCard title="Total Updates" value={totalCount} />
-            <StatCard title="Unread Loaded" value={unreadCount} />
-            <StatCard title="Loaded" value={items.length} />
+            <StatCard title={text.totalUpdates} value={totalCount} />
+            <StatCard title={text.unreadLoaded} value={unreadCount} />
+            <StatCard title={text.loaded} value={items.length} />
           </div>
         </section>
 
@@ -255,14 +256,16 @@ function NotificationsPage() {
             <div className="space-y-5">
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-bold text-slate-600">
                 <span>
-                  Showing latest {items.length} of {totalCount || items.length} notifications
+                  {text.showingLatest
+                    .replace('{shown}', String(items.length))
+                    .replace('{total}', String(totalCount || items.length))}
                 </span>
-                {refreshing ? <span>Refreshing...</span> : null}
+                {refreshing ? <span>{text.refreshing}</span> : null}
               </div>
 
               <div className="grid gap-4">
                 {items.map((item) => (
-                  <NotificationCard key={item.id} item={item} />
+                  <NotificationCard key={item.id} item={item} language={language} text={text} />
                 ))}
               </div>
 
@@ -277,10 +280,10 @@ function NotificationsPage() {
                     {loadingMore ? (
                       <>
                         <Loader2 className="h-4 w-4 animate-spin" />
-                        Loading...
+                        {text.loadingMore}
                       </>
                     ) : (
-                      'Load More'
+                      text.loadMore
                     )}
                   </button>
                 </div>
@@ -290,14 +293,13 @@ function NotificationsPage() {
             <div className="rounded-3xl bg-slate-50 p-10 text-center">
               <Bell className="mx-auto h-10 w-10 text-slate-300" />
               <h2 className="mt-4 text-2xl font-black text-slate-950">
-                No notifications yet
+                {text.emptyTitle}
               </h2>
               <p className="mx-auto mt-2 max-w-xl text-sm leading-7 text-slate-500">
-                Jab admin aapki application, case ya donation status update karega
-                to notification yahan show hogi.
+                {text.emptyText}
               </p>
               <Link to="/dashboard" className="secondary-btn mt-6">
-                Back to Dashboard
+                {text.backDashboard}
               </Link>
             </div>
           )}
@@ -307,11 +309,20 @@ function NotificationsPage() {
   )
 }
 
-function NotificationCard({ item }: { item: UserNotification }) {
+function NotificationCard({
+  item,
+  language,
+  text,
+}: {
+  item: UserNotification
+  language: AppLanguage
+  text: MobileUxCopy['notifications']
+}) {
   const safeActionUrl = getSafeNotificationActionUrl(
     item.action_url,
     typeof window !== 'undefined' ? window.location.origin : undefined,
   )
+  const categoryLabel = text.categories[item.category] ?? text.categories.general
 
   return (
     <article
@@ -327,11 +338,11 @@ function NotificationCard({ item }: { item: UserNotification }) {
                 item.category,
               )}`}
             >
-              {getNotificationCategoryLabel(item.category)}
+              {categoryLabel}
             </span>
             {!item.is_read ? (
               <span className="rounded-full bg-emerald-600 px-3 py-1 text-xs font-black text-white">
-                New
+                {text.newLabel}
               </span>
             ) : null}
           </div>
@@ -343,7 +354,7 @@ function NotificationCard({ item }: { item: UserNotification }) {
             {item.message}
           </p>
           <p className="mt-3 text-xs font-bold uppercase tracking-[0.14em] text-slate-400">
-            {formatNotificationDate(item.created_at)}
+            {formatNotificationDateForLanguage(item.created_at, language, text.unavailableDate)}
           </p>
         </div>
 
@@ -352,12 +363,31 @@ function NotificationCard({ item }: { item: UserNotification }) {
             href={safeActionUrl}
             className="inline-flex h-10 items-center justify-center rounded-xl bg-emerald-900 px-4 text-sm font-black text-white no-underline shadow-sm ring-1 ring-emerald-900/10 transition hover:bg-emerald-800 visited:text-white"
           >
-            Open
+            {text.open}
           </a>
         ) : null}
       </div>
     </article>
   )
+}
+
+function formatNotificationDateForLanguage(
+  value: string | null | undefined,
+  language: AppLanguage,
+  unavailable: string,
+) {
+  if (!value) return unavailable
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return unavailable
+  const locale = language === 'ur' ? 'ur-PK' : language === 'sd' ? 'sd-PK' : 'en-GB'
+
+  return date.toLocaleString(locale, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
 }
 
 function StatCard({ title, value }: { title: string; value: number }) {

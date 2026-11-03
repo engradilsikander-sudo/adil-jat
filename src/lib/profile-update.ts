@@ -220,16 +220,52 @@ export function isValidProfileUpdateDate(value: string) {
   )
 }
 
+
+export type ProfileUpdateValidationMessages = {
+  required: string
+  fullNameLength: string
+  fatherNameLength: string
+  cnicInvalid: string
+  mobileInvalid: string
+  emergencyMobileInvalid: string
+  addressIncomplete: string
+  addressTooLong: string
+  dateOfBirthInvalid: string
+  genderInvalid: string
+  bloodGroupInvalid: string
+  talukaInvalid: string
+  photoTypeInvalid: string
+  photoTooLarge: string
+}
+
+export const DEFAULT_PROFILE_UPDATE_VALIDATION_MESSAGES: ProfileUpdateValidationMessages = {
+  required: 'This field is required.',
+  fullNameLength: 'Full name must be between 3 and 120 characters.',
+  fatherNameLength: 'Father name must be between 3 and 120 characters.',
+  cnicInvalid: 'Enter CNIC in 12345-1234567-1 format.',
+  mobileInvalid: 'Enter a valid Pakistani mobile number.',
+  emergencyMobileInvalid: 'Enter a valid emergency contact mobile number.',
+  addressIncomplete: 'Enter a complete residential address.',
+  addressTooLong: 'Address must be 500 characters or fewer.',
+  dateOfBirthInvalid: 'Enter a valid date of birth.',
+  genderInvalid: 'Select a valid gender option.',
+  bloodGroupInvalid: 'Select a valid blood group.',
+  talukaInvalid: 'Select a taluka from the selected district.',
+  photoTypeInvalid: 'Photo must be JPG, PNG, or WebP.',
+  photoTooLarge: 'Photo must be 2 MB or smaller.',
+}
+
 export function validateProfileUpdateDraft(
   draft: ProfileUpdateDraft,
   photo?: File | null,
+  messages: ProfileUpdateValidationMessages = DEFAULT_PROFILE_UPDATE_VALIDATION_MESSAGES,
 ) {
   const normalized = normalizeProfileUpdateDraft(draft)
   const errors: ProfileUpdateFieldErrors = {}
 
   for (const field of requiredTextFields) {
     if (!normalized[field]) {
-      errors[field] = 'This field is required.'
+      errors[field] = messages.required
     }
   }
 
@@ -237,7 +273,7 @@ export function validateProfileUpdateDraft(
     normalized.full_name &&
     (normalized.full_name.length < 3 || normalized.full_name.length > 120)
   ) {
-    errors.full_name = 'Full name must be between 3 and 120 characters.'
+    errors.full_name = messages.fullNameLength
   }
 
   if (
@@ -245,34 +281,33 @@ export function validateProfileUpdateDraft(
     (normalized.father_name.length < 3 ||
       normalized.father_name.length > 120)
   ) {
-    errors.father_name = 'Father name must be between 3 and 120 characters.'
+    errors.father_name = messages.fatherNameLength
   }
 
   if (
     normalized.cnic &&
     !/^[0-9]{5}-[0-9]{7}-[0-9]$/.test(normalized.cnic)
   ) {
-    errors.cnic = 'Enter CNIC in 12345-1234567-1 format.'
+    errors.cnic = messages.cnicInvalid
   }
 
   if (normalized.mobile && !isPakistaniMobile(normalized.mobile)) {
-    errors.mobile = 'Enter a valid Pakistani mobile number.'
+    errors.mobile = messages.mobileInvalid
   }
 
   if (
     normalized.emergency_contact_mobile &&
     !isPakistaniMobile(normalized.emergency_contact_mobile)
   ) {
-    errors.emergency_contact_mobile =
-      'Enter a valid emergency contact mobile number.'
+    errors.emergency_contact_mobile = messages.emergencyMobileInvalid
   }
 
   if (normalized.address && normalized.address.length < 10) {
-    errors.address = 'Enter a complete residential address.'
+    errors.address = messages.addressIncomplete
   }
 
   if (normalized.address.length > 500) {
-    errors.address = 'Address must be 500 characters or fewer.'
+    errors.address = messages.addressTooLong
   }
 
   if (
@@ -280,21 +315,21 @@ export function validateProfileUpdateDraft(
     (!isValidProfileUpdateDate(normalized.date_of_birth) ||
       normalized.date_of_birth > todayDate())
   ) {
-    errors.date_of_birth = 'Enter a valid date of birth.'
+    errors.date_of_birth = messages.dateOfBirthInvalid
   }
 
   if (
     normalized.gender &&
     !genderOptions.includes(normalized.gender)
   ) {
-    errors.gender = 'Select a valid gender option.'
+    errors.gender = messages.genderInvalid
   }
 
   if (
     normalized.blood_group &&
     !bloodGroupOptions.includes(normalized.blood_group)
   ) {
-    errors.blood_group = 'Select a valid blood group.'
+    errors.blood_group = messages.bloodGroupInvalid
   }
 
   const validTalukas = talukasByDistrict[normalized.district] ?? []
@@ -303,7 +338,7 @@ export function validateProfileUpdateDraft(
     normalized.taluka &&
     !validTalukas.includes(normalized.taluka)
   ) {
-    errors.taluka = 'Select a taluka from the selected district.'
+    errors.taluka = messages.talukaInvalid
   }
 
   if (photo) {
@@ -312,9 +347,9 @@ export function validateProfileUpdateDraft(
         photo.type as (typeof PROFILE_UPDATE_ALLOWED_PHOTO_TYPES)[number],
       )
     ) {
-      errors.photo = 'Photo must be JPG, PNG, or WebP.'
+      errors.photo = messages.photoTypeInvalid
     } else if (photo.size > PROFILE_UPDATE_MAX_PHOTO_SIZE_BYTES) {
-      errors.photo = 'Photo must be 2 MB or smaller.'
+      errors.photo = messages.photoTooLarge
     }
   }
 

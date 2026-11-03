@@ -117,4 +117,30 @@ describe('profile update helpers', () => {
       }),
     ).toBe('44104-1234567-1')
   })
+
+  it('accepts localized validation messages without changing validation rules', () => {
+    const draft = memberToProfileUpdateDraft(member)
+    draft.cnic = '123'
+
+    const result = validateProfileUpdateDraft(draft, null, {
+      required: 'REQ',
+      fullNameLength: 'FULL',
+      fatherNameLength: 'FATHER',
+      cnicInvalid: 'مقامی CNIC پیغام',
+      mobileInvalid: 'MOBILE',
+      emergencyMobileInvalid: 'EMERGENCY',
+      addressIncomplete: 'ADDRESS',
+      addressTooLong: 'ADDRESS_LONG',
+      dateOfBirthInvalid: 'DOB',
+      genderInvalid: 'GENDER',
+      bloodGroupInvalid: 'BLOOD',
+      talukaInvalid: 'TALUKA',
+      photoTypeInvalid: 'PHOTO_TYPE',
+      photoTooLarge: 'PHOTO_SIZE',
+    })
+
+    expect(result.valid).toBe(false)
+    expect(result.errors.cnic).toBe('مقامی CNIC پیغام')
+  })
+
 })

@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
+import { useI18n } from '../../lib/i18n'
+import { mobileUxCopy } from '../../lib/i18n/mobile-ux-copy'
 import { supabase } from '../../lib/supabase/client'
 import { deleteJasCacheStorage } from '../../lib/pwa-cache-reset'
 import {
@@ -73,6 +75,8 @@ async function unregisterDevServiceWorkers() {
 }
 
 export function PwaBootstrap() {
+  const { language, direction } = useI18n()
+  const text = mobileUxCopy[language].pwa
   const [installPrompt, setInstallPrompt] =
     useState<BeforeInstallPromptEvent | null>(null)
   const [canInstall, setCanInstall] = useState(false)
@@ -330,7 +334,7 @@ export function PwaBootstrap() {
 
   async function handleUpdateClick() {
     // Explicit confirmation protects unsaved registration/admin form changes.
-    if (!window.confirm('Update JAS now? Save any unfinished form first. This will reload the page.')) return
+    if (!window.confirm(text.updateConfirm)) return
     updateAccepted.current = true
     setIsRefreshing(true)
     setUpdateError('')
@@ -341,12 +345,12 @@ export function PwaBootstrap() {
       updateTimer.current = setTimeout(() => {
         updateAccepted.current = false
         setIsRefreshing(false)
-        setUpdateError('Update did not finish. Please try again when connected.')
+        setUpdateError(text.updateTimeout)
       }, 15000)
     } catch {
       updateAccepted.current = false
       setIsRefreshing(false)
-      setUpdateError('Could not start the update. Please try again.')
+      setUpdateError(text.updateStartFailed)
     }
   }
 
@@ -371,17 +375,17 @@ export function PwaBootstrap() {
 
   async function handleEnablePushClick() {
     if (!VAPID_PUBLIC_KEY) {
-      setPushMessage('Push notifications are not configured yet.')
+      setPushMessage(text.pushNotConfigured)
       return
     }
 
     if (!supportsWebPush()) {
-      setPushMessage('This browser does not support web push notifications.')
+      setPushMessage(text.pushUnsupported)
       return
     }
 
     if (!isLoggedIn) {
-      setPushMessage('Please login first to enable member notifications.')
+      setPushMessage(text.pushLoginFirst)
       return
     }
 
@@ -393,7 +397,7 @@ export function PwaBootstrap() {
       setPushPermission(permission)
 
       if (permission !== 'granted') {
-        setPushMessage('Notification permission was not allowed.')
+        setPushMessage(text.pushPermissionDenied)
         return
       }
 
@@ -403,7 +407,7 @@ export function PwaBootstrap() {
       } = await supabase.auth.getUser()
 
       if (userError || !user) {
-        setPushMessage('Please login again to enable notifications.')
+        setPushMessage(text.pushLoginAgain)
         return
       }
 
@@ -423,7 +427,7 @@ export function PwaBootstrap() {
       const auth = subscriptionJson.keys?.auth
 
       if (!endpoint || !p256dh || !auth) {
-        setPushMessage('Browser did not return a complete push subscription.')
+        setPushMessage(text.pushIncomplete)
         return
       }
 
@@ -468,7 +472,7 @@ export function PwaBootstrap() {
       setPushSubscribed(true)
       setPushPreferenceEnabled(true)
       setDismissedPush(false)
-      setPushMessage('Browser notifications enabled.')
+      setPushMessage(text.pushEnabled)
       window.dispatchEvent(
         new CustomEvent('jas-web-push-preferences-updated'),
       )
@@ -476,7 +480,7 @@ export function PwaBootstrap() {
       setPushMessage(
         error instanceof Error
           ? error.message
-          : 'Unable to enable browser notifications.',
+          : text.pushEnableFailed,
       )
     } finally {
       setPushLoading(false)
@@ -506,7 +510,7 @@ export function PwaBootstrap() {
   if (!shouldShowUpdate && !shouldShowInstall && !shouldShowPush) return null
 
   return (
-    <div className="pwa-toast-stack" role="status" aria-live="polite">
+    <div className="pwa-toast-stack" role="status" aria-live="polite" dir={direction}>
       <style>{pwaStyles}</style>
 
       {shouldShowUpdate ? (
@@ -515,15 +519,15 @@ export function PwaBootstrap() {
             ↻
           </div>
           <div className="pwa-toast__body">
-            <p className="pwa-toast__eyebrow">JAS app update</p>
-            <h2 className="pwa-toast__title">{isRefreshing ? 'Updating…' : 'New version available'}</h2>
+            <p className="pwa-toast__eyebrow">{text.updateEyebrow}</p>
+            <h2 className="pwa-toast__title">{isRefreshing ? text.updating : text.updateAvailable}</h2>
             <p className="pwa-toast__text">
-              Save any unfinished work, then choose Update now. You can keep using this version by choosing Later.
+              {text.updateDescription}
             </p>
           </div>
           <div className="pwa-toast__actions">
-            <button type="button" className="pwa-toast__button pwa-toast__button--primary" disabled={isRefreshing} onClick={() => void handleUpdateClick()}>{isRefreshing ? 'Updating…' : 'Update now'}</button>
-            <button type="button" className="pwa-toast__button pwa-toast__button--ghost" disabled={isRefreshing} onClick={() => setUpdateDismissed(true)}>Later</button>
+            <button type="button" className="pwa-toast__button pwa-toast__button--primary" disabled={isRefreshing} onClick={() => void handleUpdateClick()}>{isRefreshing ? text.updating : text.updateNow}</button>
+            <button type="button" className="pwa-toast__button pwa-toast__button--ghost" disabled={isRefreshing} onClick={() => setUpdateDismissed(true)}>{text.later}</button>
           </div>
           {updateError ? <p role="alert">{updateError}</p> : null}
         </section>
@@ -535,11 +539,10 @@ export function PwaBootstrap() {
             ⬇
           </div>
           <div className="pwa-toast__body">
-            <p className="pwa-toast__eyebrow">Install JAS App</p>
-            <h2 className="pwa-toast__title">Install JAS App</h2>
+            <p className="pwa-toast__eyebrow">{text.installEyebrow}</p>
+            <h2 className="pwa-toast__title">{text.installTitle}</h2>
             <p className="pwa-toast__text">
-              Install the JAS member portal for faster access to membership,
-              digital cards, updates and admin tools.
+              {text.installDescription}
             </p>
           </div>
           <div className="pwa-toast__actions">
@@ -549,14 +552,14 @@ export function PwaBootstrap() {
               onClick={handleInstallClick}
               disabled={isInstalling}
             >
-              {isInstalling ? 'Opening…' : 'Install JAS App'}
+              {isInstalling ? text.opening : text.installAction}
             </button>
             <button
               type="button"
               className="pwa-toast__button pwa-toast__button--ghost"
               onClick={() => setDismissedInstall(true)}
             >
-              Not now
+              {text.notNow}
             </button>
           </div>
         </section>
@@ -568,11 +571,10 @@ export function PwaBootstrap() {
             🔔
           </div>
           <div className="pwa-toast__body">
-            <p className="pwa-toast__eyebrow">JAS notifications</p>
-            <h2 className="pwa-toast__title">Enable browser notifications</h2>
+            <p className="pwa-toast__eyebrow">{text.pushEyebrow}</p>
+            <h2 className="pwa-toast__title">{text.pushTitle}</h2>
             <p className="pwa-toast__text">
-              Get membership approval, payment and important update alerts even
-              when the JAS app is installed or running in the background.
+              {text.pushDescription}
             </p>
             {pushMessage ? (
               <p className="pwa-toast__note">{pushMessage}</p>
@@ -585,14 +587,14 @@ export function PwaBootstrap() {
               onClick={handleEnablePushClick}
               disabled={pushLoading}
             >
-              {pushLoading ? 'Enabling…' : 'Enable notifications'}
+              {pushLoading ? text.enabling : text.enableNotifications}
             </button>
             <button
               type="button"
               className="pwa-toast__button pwa-toast__button--ghost"
               onClick={() => setDismissedPush(true)}
             >
-              Not now
+              {text.notNow}
             </button>
           </div>
         </section>
@@ -608,7 +610,10 @@ const pwaStyles = `
     bottom: max(1rem, env(safe-area-inset-bottom));
     z-index: 9999;
     width: min(27rem, calc(100vw - 2rem));
-    pointer-events: none;
+    max-height: calc(100dvh - 2rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    pointer-events: auto;
   }
 
   .pwa-toast {
@@ -643,6 +648,10 @@ const pwaStyles = `
 
   .pwa-toast__body {
     min-width: 0;
+  }
+
+  [dir="rtl"] .pwa-toast__eyebrow {
+    letter-spacing: normal;
   }
 
   .pwa-toast__eyebrow {
@@ -724,6 +733,7 @@ const pwaStyles = `
       right: 1rem;
       bottom: max(0.75rem, env(safe-area-inset-bottom));
       width: auto;
+      max-height: calc(100dvh - 1.5rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
     }
 
     .pwa-toast {

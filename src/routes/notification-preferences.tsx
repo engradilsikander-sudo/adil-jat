@@ -13,6 +13,8 @@ import {
   Trash2,
 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { useI18n, type AppLanguage } from '../lib/i18n'
+import { mobileUxCopy, type MobileUxCopy } from '../lib/i18n/mobile-ux-copy'
 import { supabase } from '../lib/supabase/client'
 import {
   DEFAULT_NOTIFICATION_PREFERENCES,
@@ -51,11 +53,6 @@ const PREFERENCE_KEYS: (keyof PreferenceState)[] = [
   'general_updates',
 ]
 
-const LEAVE_WITH_UNSAVED_PREFERENCES =
-  'You have unsaved notification preference changes. Leave without saving them?'
-const REFRESH_WITH_UNSAVED_PREFERENCES =
-  'Refreshing will discard your unsaved notification preference changes. Continue?'
-
 function notificationPreferencesEqual(
   left: PreferenceState,
   right: PreferenceState,
@@ -65,6 +62,8 @@ function notificationPreferencesEqual(
 
 function NotificationPreferencesPage() {
   const navigate = useNavigate()
+  const { language, direction } = useI18n()
+  const text = mobileUxCopy[language].preferences
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [browserAction, setBrowserAction] = useState(false)
@@ -93,7 +92,7 @@ function NotificationPreferencesPage() {
 
   useBlocker({
     shouldBlockFn: () =>
-      dirty && !window.confirm(LEAVE_WITH_UNSAVED_PREFERENCES),
+      dirty && !window.confirm(text.leaveConfirm),
     enableBeforeUnload: dirty,
   })
 
@@ -134,7 +133,7 @@ function NotificationPreferencesPage() {
       ])
 
     if (preferenceError) {
-      setError(migrationMessage(preferenceError.message))
+      setError(migrationMessage(preferenceError.message, text))
     } else {
       const loadedPreferences = normalizeNotificationPreferences(preferenceRow)
       setSavedPreferences(loadedPreferences)
@@ -144,7 +143,7 @@ function NotificationPreferencesPage() {
     }
 
     if (subscriptionResult.error) {
-      setError(migrationMessage(subscriptionResult.error.message))
+      setError(migrationMessage(subscriptionResult.error.message, text))
       setSubscriptions([])
     } else {
       setSubscriptions((subscriptionResult.data || []) as PushSubscriptionRow[])
@@ -179,7 +178,7 @@ function NotificationPreferencesPage() {
     } = await supabase.auth.getUser()
 
     if (userError || !user) {
-      setError('Please login again before saving notification preferences.')
+      setError(text.loginAgainSave)
       setSaving(false)
       return
     }
@@ -195,11 +194,11 @@ function NotificationPreferencesPage() {
       )
 
     if (saveError) {
-      setError(migrationMessage(saveError.message))
+      setError(migrationMessage(saveError.message, text))
     } else {
       setPreferences(nextPreferences)
       setSavedPreferences(nextPreferences)
-      setMessage('Notification preferences saved.')
+      setMessage(text.saved)
       window.dispatchEvent(
         new CustomEvent('jas-web-push-preferences-updated'),
       )
@@ -210,15 +209,15 @@ function NotificationPreferencesPage() {
 
   async function enableCurrentBrowser() {
     if (!VAPID_PUBLIC_KEY) {
-      setError('VITE_VAPID_PUBLIC_KEY is not configured.')
+      setError(text.vapidMissing)
       return
     }
 
     if (!canUseBrowserPush) {
       setError(
         import.meta.env.DEV
-          ? 'Browser push registration is available on the production HTTPS app.'
-          : 'This browser does not support secure web push notifications.',
+          ? text.productionOnly
+          : text.unsupportedSecurePush,
       )
       return
     }
@@ -234,8 +233,8 @@ function NotificationPreferencesPage() {
       if (requestedPermission !== 'granted') {
         setError(
           requestedPermission === 'denied'
-            ? 'Browser notification permission is blocked. Enable it from the browser site settings.'
-            : 'Notification permission was not granted.',
+            ? text.permissionBlocked
+            : text.permissionNotGranted,
         )
         return
       }
@@ -246,7 +245,7 @@ function NotificationPreferencesPage() {
       } = await supabase.auth.getUser()
 
       if (userError || !user) {
-        setError('Please login again before enabling browser notifications.')
+        setError(text.loginAgainEnable)
         return
       }
 
@@ -267,7 +266,7 @@ function NotificationPreferencesPage() {
       const auth = json.keys?.auth
 
       if (!endpoint || !p256dh || !auth) {
-        setError('Browser returned an incomplete push subscription.')
+        setError(text.incompleteSubscription)
         return
       }
 
@@ -292,7 +291,7 @@ function NotificationPreferencesPage() {
         )
 
       if (subscriptionError) {
-        setError(migrationMessage(subscriptionError.message))
+        setError(migrationMessage(subscriptionError.message, text))
         return
       }
 
@@ -311,7 +310,7 @@ function NotificationPreferencesPage() {
         )
 
       if (preferenceError) {
-        setError(migrationMessage(preferenceError.message))
+        setError(migrationMessage(preferenceError.message, text))
         return
       }
 
@@ -321,7 +320,7 @@ function NotificationPreferencesPage() {
         ...current,
         web_push_enabled: true,
       }))
-      setMessage('Browser notifications enabled for this device.')
+      setMessage(text.enabledForDevice)
       await loadPreferences({ silent: true, preserveDraft: true })
       window.dispatchEvent(
         new CustomEvent('jas-web-push-preferences-updated'),
@@ -330,7 +329,7 @@ function NotificationPreferencesPage() {
       setError(
         actionError instanceof Error
           ? actionError.message
-          : 'Unable to enable browser notifications.',
+          : text.unableEnable,
       )
     } finally {
       setBrowserAction(false)
@@ -351,7 +350,7 @@ function NotificationPreferencesPage() {
 
       if (!browserSubscription) {
         setCurrentEndpoint(null)
-        setMessage('This browser is not currently subscribed.')
+        setMessage(text.browserNotSubscribed)
         return
       }
 
@@ -366,13 +365,13 @@ function NotificationPreferencesPage() {
         .eq('endpoint', endpoint)
 
       if (updateError) {
-        setError(migrationMessage(updateError.message))
+        setError(migrationMessage(updateError.message, text))
         return
       }
 
       await browserSubscription.unsubscribe()
       setCurrentEndpoint(null)
-      setMessage('This browser was removed from push notifications.')
+      setMessage(text.browserRemoved)
       await loadPreferences({ silent: true, preserveDraft: true })
       window.dispatchEvent(
         new CustomEvent('jas-web-push-preferences-updated'),
@@ -381,7 +380,7 @@ function NotificationPreferencesPage() {
       setError(
         actionError instanceof Error
           ? actionError.message
-          : 'Unable to remove this browser subscription.',
+          : text.unableRemove,
       )
     } finally {
       setBrowserAction(false)
@@ -399,7 +398,7 @@ function NotificationPreferencesPage() {
     } = await supabase.auth.getUser()
 
     if (userError || !user) {
-      setError('Please login again before disabling devices.')
+      setError(text.loginAgainDisable)
       setBrowserAction(false)
       return
     }
@@ -428,6 +427,7 @@ function NotificationPreferencesPage() {
       setError(
         migrationMessage(
           subscriptionUpdate.error?.message || preferenceUpdate.error?.message || '',
+          text,
         ),
       )
       setBrowserAction(false)
@@ -455,7 +455,7 @@ function NotificationPreferencesPage() {
       web_push_enabled: false,
     }))
     setCurrentEndpoint(null)
-    setMessage('Web push paused and all saved browser devices disabled.')
+    setMessage(text.allDevicesDisabled)
     await loadPreferences({ silent: true, preserveDraft: true })
     window.dispatchEvent(
       new CustomEvent('jas-web-push-preferences-updated'),
@@ -464,17 +464,17 @@ function NotificationPreferencesPage() {
   }
 
   async function refreshPreferences() {
-    if (dirty && !window.confirm(REFRESH_WITH_UNSAVED_PREFERENCES)) return
+    if (dirty && !window.confirm(text.refreshConfirm)) return
     await loadPreferences({ silent: true })
   }
 
   if (loading) {
     return (
-      <main className="min-h-screen px-4 py-10">
+      <main className="min-h-screen px-4 py-10" dir={direction}>
         <div className="page-wrap rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
           <div className="flex items-center gap-3 text-sm font-bold text-slate-700">
             <Loader2 className="h-5 w-5 animate-spin text-emerald-700" />
-            Loading notification preferences...
+            {text.loading}
           </div>
         </div>
       </main>
@@ -482,7 +482,7 @@ function NotificationPreferencesPage() {
   }
 
   return (
-    <main className="min-h-screen px-4 py-8 md:py-10">
+    <main className="min-h-screen px-4 py-8 md:py-10" dir={direction}>
       <div className="page-wrap space-y-6">
         <section className="overflow-hidden rounded-[2rem] border border-slate-200 bg-white shadow-sm">
           <div className="bg-gradient-to-br from-slate-950 via-emerald-950 to-slate-900 p-6 text-white md:p-8">
@@ -490,14 +490,13 @@ function NotificationPreferencesPage() {
               <div>
                 <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold text-amber-200">
                   <ShieldCheck className="h-4 w-4" />
-                  Notification Control
+                  {text.control}
                 </div>
                 <h1 className="mt-5 text-4xl font-black md:text-6xl">
-                  Push Preferences
+                  {text.title}
                 </h1>
                 <p className="mt-4 max-w-3xl text-base leading-8 text-white/70">
-                  Choose which JAS updates can reach your browser and manage all
-                  devices linked with your account.
+                  {text.subtitle}
                 </p>
               </div>
 
@@ -505,7 +504,7 @@ function NotificationPreferencesPage() {
                 to="/notifications"
                 className="inline-flex h-11 items-center justify-center rounded-xl border border-white/15 bg-white/10 px-5 text-sm font-black text-white no-underline transition hover:bg-white/20 visited:text-white"
               >
-                View Notifications
+                {text.viewNotifications}
               </Link>
             </div>
           </div>
@@ -530,14 +529,13 @@ function NotificationPreferencesPage() {
             <div className="flex items-start justify-between gap-4">
               <div>
                 <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">
-                  Browser channel
+                  {text.browserChannel}
                 </p>
                 <h2 className="mt-2 text-2xl font-black text-slate-950">
-                  Web push notifications
+                  {text.webPushTitle}
                 </h2>
                 <p className="mt-2 text-sm font-semibold leading-7 text-slate-500">
-                  Pausing push keeps in-app notifications active. Removing a
-                  device deletes only that browser subscription.
+                  {text.webPushDescription}
                 </p>
               </div>
               {preferences.web_push_enabled ? (
@@ -549,23 +547,23 @@ function NotificationPreferencesPage() {
 
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
               <StatusPill
-                label="Browser support"
-                value={browserSupported ? 'Supported' : 'Not supported'}
+                label={text.browserSupport}
+                value={browserSupported ? text.supported : text.notSupported}
                 good={browserSupported}
               />
               <StatusPill
-                label="Permission"
-                value={permission}
+                label={text.permission}
+                value={permissionLabel(permission, text)}
                 good={permission === 'granted'}
               />
               <StatusPill
-                label="Push configuration"
-                value={pushConfigured ? 'Configured' : 'Missing public key'}
+                label={text.pushConfiguration}
+                value={pushConfigured ? text.configured : text.missingPublicKey}
                 good={pushConfigured}
               />
               <StatusPill
-                label="Current device"
-                value={currentEndpoint ? 'Subscribed' : 'Not subscribed'}
+                label={text.currentDevice}
+                value={currentEndpoint ? text.subscribed : text.notSubscribed}
                 good={Boolean(currentEndpoint)}
               />
             </div>
@@ -582,7 +580,7 @@ function NotificationPreferencesPage() {
                 ) : (
                   <Bell className="h-4 w-4" />
                 )}
-                Enable this browser
+                {text.enableThisBrowser}
               </button>
               <button
                 type="button"
@@ -591,23 +589,23 @@ function NotificationPreferencesPage() {
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-5 text-sm font-black text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Trash2 className="h-4 w-4" />
-                Remove this browser
+                {text.removeThisBrowser}
               </button>
             </div>
           </div>
 
           <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-6">
             <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">
-              Delivery categories
+              {text.deliveryCategories}
             </p>
             <h2 className="mt-2 text-2xl font-black text-slate-950">
-              Choose important updates
+              {text.chooseImportantUpdates}
             </h2>
 
             <div className="mt-5 space-y-3">
               <PreferenceToggle
-                label="Enable browser push"
-                description="Master switch for every web push category."
+                label={text.enableBrowserPush}
+                description={text.enableBrowserPushDescription}
                 checked={preferences.web_push_enabled}
                 onChange={(checked) =>
                   setPreferences((current) => ({
@@ -617,8 +615,8 @@ function NotificationPreferencesPage() {
                 }
               />
               <PreferenceToggle
-                label="Membership updates"
-                description="Application, card, payment and profile decisions."
+                label={text.membershipUpdates}
+                description={text.membershipUpdatesDescription}
                 checked={preferences.membership_updates}
                 onChange={(checked) =>
                   setPreferences((current) => ({
@@ -628,8 +626,8 @@ function NotificationPreferencesPage() {
                 }
               />
               <PreferenceToggle
-                label="Program updates"
-                description="Education, health, welfare and employment cases."
+                label={text.programUpdates}
+                description={text.programUpdatesDescription}
                 checked={preferences.program_updates}
                 onChange={(checked) =>
                   setPreferences((current) => ({
@@ -639,8 +637,8 @@ function NotificationPreferencesPage() {
                 }
               />
               <PreferenceToggle
-                label="Finance updates"
-                description="Donation and finance-related status alerts."
+                label={text.financeUpdates}
+                description={text.financeUpdatesDescription}
                 checked={preferences.finance_updates}
                 onChange={(checked) =>
                   setPreferences((current) => ({
@@ -650,8 +648,8 @@ function NotificationPreferencesPage() {
                 }
               />
               <PreferenceToggle
-                label="General announcements"
-                description="Organization notices and general campaigns."
+                label={text.generalAnnouncements}
+                description={text.generalAnnouncementsDescription}
                 checked={preferences.general_updates}
                 onChange={(checked) =>
                   setPreferences((current) => ({
@@ -673,7 +671,7 @@ function NotificationPreferencesPage() {
               ) : (
                 <Save className="h-4 w-4" />
               )}
-              Save preferences
+              {text.savePreferences}
             </button>
           </div>
         </section>
@@ -682,13 +680,13 @@ function NotificationPreferencesPage() {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
               <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">
-                Saved devices
+                {text.savedDevices}
               </p>
               <h2 className="mt-2 text-2xl font-black text-slate-950">
-                Browser subscriptions
+                {text.browserSubscriptions}
               </h2>
               <p className="mt-2 text-sm font-semibold text-slate-500">
-                Endpoints and encryption keys are never displayed in full.
+                {text.endpointsHidden}
               </p>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -699,7 +697,7 @@ function NotificationPreferencesPage() {
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:bg-slate-50"
               >
                 <RefreshCw className="h-4 w-4" />
-                Refresh
+                {text.refresh}
               </button>
               <button
                 type="button"
@@ -708,7 +706,7 @@ function NotificationPreferencesPage() {
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-red-200 bg-red-50 px-4 text-sm font-black text-red-700 transition hover:bg-red-100 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <BellOff className="h-4 w-4" />
-                Disable all devices
+                {text.disableAllDevices}
               </button>
             </div>
           </div>
@@ -734,7 +732,7 @@ function NotificationPreferencesPage() {
                           {subscription.device_label ||
                             getDeviceLabel(subscription.user_agent)}
                         </h3>
-                        <p className="mt-1 truncate text-xs font-semibold text-slate-500">
+                        <p className="mt-1 truncate text-xs font-semibold text-slate-500" dir="ltr" data-keep-ltr>
                           {maskPushEndpoint(subscription.endpoint)}
                         </p>
                       </div>
@@ -746,26 +744,26 @@ function NotificationPreferencesPage() {
                           : 'bg-slate-200 text-slate-600'
                       }`}
                     >
-                      {subscription.enabled ? 'Enabled' : 'Disabled'}
+                      {subscription.enabled ? text.enabled : text.disabled}
                     </span>
                   </div>
 
                   <dl className="mt-4 grid grid-cols-2 gap-3 text-xs">
                     <DeviceMetric
-                      label="Failures"
+                      label={text.failures}
                       value={String(subscription.failure_count)}
                     />
                     <DeviceMetric
-                      label="Last seen"
-                      value={formatCompactDate(subscription.last_seen_at)}
+                      label={text.lastSeen}
+                      value={formatCompactDate(subscription.last_seen_at, language, text)}
                     />
                     <DeviceMetric
-                      label="Last success"
-                      value={formatCompactDate(subscription.last_success_at)}
+                      label={text.lastSuccess}
+                      value={formatCompactDate(subscription.last_success_at, language, text)}
                     />
                     <DeviceMetric
-                      label="Last failure"
-                      value={formatCompactDate(subscription.last_failure_at)}
+                      label={text.lastFailure}
+                      value={formatCompactDate(subscription.last_failure_at, language, text)}
                     />
                   </dl>
                 </article>
@@ -775,7 +773,7 @@ function NotificationPreferencesPage() {
             <div className="mt-5 rounded-2xl bg-slate-50 p-8 text-center">
               <BellOff className="mx-auto h-8 w-8 text-slate-300" />
               <p className="mt-3 text-sm font-black text-slate-700">
-                No browser devices are registered yet.
+                {text.noDevices}
               </p>
             </div>
           )}
@@ -850,11 +848,25 @@ function DeviceMetric({ label, value }: { label: string; value: string }) {
   )
 }
 
-function formatCompactDate(value?: string | null) {
-  if (!value) return 'Never'
+function permissionLabel(
+  permission: NotificationPermission,
+  text: MobileUxCopy['preferences'],
+) {
+  if (permission === 'granted') return text.permissionGranted
+  if (permission === 'denied') return text.permissionDenied
+  return text.permissionDefault
+}
+
+function formatCompactDate(
+  value: string | null | undefined,
+  language: AppLanguage,
+  text: MobileUxCopy['preferences'],
+) {
+  if (!value) return text.never
   const date = new Date(value)
-  if (Number.isNaN(date.getTime())) return 'Unknown'
-  return date.toLocaleString('en-GB', {
+  if (Number.isNaN(date.getTime())) return text.unknown
+  const locale = language === 'ur' ? 'ur-PK' : language === 'sd' ? 'sd-PK' : 'en-GB'
+  return date.toLocaleString(locale, {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -863,10 +875,13 @@ function formatCompactDate(value?: string | null) {
   })
 }
 
-function migrationMessage(message: string) {
+function migrationMessage(
+  message: string,
+  text: MobileUxCopy['preferences'],
+) {
   return /notification_preferences|web_push_deliveries|device_label|failure_count/i.test(
     message,
   )
-    ? 'Apply migration 20260711010000_web_push_reliability_preferences.sql before using notification preferences.'
+    ? text.migrationRequired
     : message
 }

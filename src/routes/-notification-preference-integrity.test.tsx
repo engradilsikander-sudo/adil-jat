@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { ComponentType, ReactNode } from 'react'
+import { I18nProvider } from '../lib/i18n'
 
 const state = vi.hoisted(() => ({
   blocker: null as null | {
@@ -108,7 +109,7 @@ import { Route } from './notification-preferences'
 
 async function mount() {
   const Page = (Route as unknown as { component: ComponentType }).component
-  render(<Page />)
+  render(<I18nProvider><Page /></I18nProvider>)
   await screen.findByText('Push Preferences')
 }
 
@@ -117,6 +118,7 @@ function membershipToggle() {
 }
 
 beforeEach(() => {
+  localStorage.clear()
   state.blocker = null
   state.preferenceUpsertError = false
   state.preferenceUpserts = []
@@ -199,4 +201,16 @@ it('does not silently persist unrelated dirty toggles during device-wide disable
   })
   expect(membershipToggle().checked).toBe(false)
   expect(state.blocker?.enableBeforeUnload).toBe(true)
+})
+
+
+it('switches preference controls to Sindhi and keeps the page RTL', async () => {
+  localStorage.setItem('jas_language', 'sd')
+  const Page = (Route as unknown as { component: ComponentType }).component
+  render(<I18nProvider><Page /></I18nProvider>)
+
+  const heading = await screen.findByRole('heading', { name: 'پش ترجيحات' })
+  expect(heading.closest('main')?.getAttribute('dir')).toBe('rtl')
+  expect(screen.getByRole('button', { name: 'ترجيحات محفوظ ڪريو' })).toBeTruthy()
+  expect(screen.getByRole('checkbox', { name: /ميمبرشپ اپڊيٽس/i })).toBeTruthy()
 })

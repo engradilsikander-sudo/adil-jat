@@ -44,3 +44,15 @@ it('clears protection after accepted submission even if refresh fails',async()=>
  fireEvent.click(screen.getByRole('button',{name:'Submit Update Request'}))
  await screen.findByText('Refresh failed');expect(state.blocker?.enableBeforeUnload).toBe(false)
 })
+
+
+it('localizes profile sections, options, and validation feedback in Urdu', async () => {
+ localStorage.setItem('jas_language','ur'); await mount()
+ const heading=await screen.findByRole('heading',{name:'پروفائل اپڈیٹ کی درخواست'})
+ expect(heading.closest('main')?.getAttribute('dir')).toBe('rtl')
+ expect(screen.getByText('پتہ اور علاقہ')).toBeTruthy()
+ expect(screen.getByRole('option',{name:'ضلع منتخب کریں'})).toBeTruthy()
+ const cnic=screen.getByDisplayValue('44104-1234567-1');fireEvent.change(cnic,{target:{value:'123'}})
+ fireEvent.click(screen.getByRole('button',{name:'اپڈیٹ درخواست جمع کریں'}))
+ expect(await screen.findByText('CNIC کو 12345-1234567-1 فارمیٹ میں درج کریں۔')).toBeTruthy()
+})
