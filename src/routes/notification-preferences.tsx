@@ -100,6 +100,28 @@ function NotificationPreferencesPage() {
     void loadPreferences()
   }, [])
 
+  // Optional browser discovery must never hold ordinary preferences in loading.
+  // Refreshing the saved devices restarts discovery; obsolete/unmounted effects
+  // cannot overwrite the current browser state with a late result.
+  useEffect(() => {
+    if (loading || !browserSupported || import.meta.env.DEV) return
+    let active = true
+
+    async function discoverCurrentBrowser() {
+      try {
+        const registration = await navigator.serviceWorker.ready
+        if (!active) return
+        const browserSubscription = await registration.pushManager.getSubscription()
+        if (active) setCurrentEndpoint(browserSubscription?.endpoint || null)
+      } catch {
+        if (active) setCurrentEndpoint(null)
+      }
+    }
+
+    void discoverCurrentBrowser()
+    return () => { active = false }
+  }, [loading, browserSupported, subscriptions])
+
   async function loadPreferences(options?: { silent?: boolean; preserveDraft?: boolean }) {
     if (!options?.silent) setLoading(true)
     setError('')
@@ -151,17 +173,6 @@ function NotificationPreferencesPage() {
 
     if (browserSupported) {
       setPermission(Notification.permission)
-    }
-
-    if (browserSupported && !import.meta.env.DEV) {
-      try {
-        const registration = await navigator.serviceWorker.ready
-        const browserSubscription =
-          await registration.pushManager.getSubscription()
-        setCurrentEndpoint(browserSubscription?.endpoint || null)
-      } catch {
-        setCurrentEndpoint(null)
-      }
     }
 
     setLoading(false)

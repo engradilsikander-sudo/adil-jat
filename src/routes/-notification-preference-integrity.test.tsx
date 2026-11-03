@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { ComponentType, ReactNode } from 'react'
 import { I18nProvider } from '../lib/i18n'
+import * as webPush from '../lib/web-push'
 
 const state = vi.hoisted(() => ({
   blocker: null as null | {
@@ -139,6 +140,8 @@ beforeEach(() => {
 afterEach(() => {
   cleanup()
   vi.restoreAllMocks()
+  vi.unstubAllEnvs()
+  vi.unstubAllGlobals()
 })
 
 it('protects unsaved preference edits and guards refresh before discarding them', async () => {
@@ -213,4 +216,78 @@ it('switches preference controls to Sindhi and keeps the page RTL', async () => 
   expect(heading.closest('main')?.getAttribute('dir')).toBe('rtl')
   expect(screen.getByRole('button', { name: 'ترجيحات محفوظ ڪريو' })).toBeTruthy()
   expect(screen.getByRole('checkbox', { name: /ميمبرشپ اپڊيٽس/i })).toBeTruthy()
+})
+
+// Exercise the production branch: Vitest normally sets import.meta.env.DEV=true.
+function productionPush(serviceWorker: object | undefined, supported = true) {
+  vi.stubEnv('DEV', false)
+  vi.spyOn(webPush, 'supportsWebPush').mockReturnValue(supported)
+  vi.stubGlobal('Notification', { permission: 'granted' })
+  vi.stubGlobal('navigator', Object.create(navigator, {
+    serviceWorker: { configurable: true, value: serviceWorker },
+  }))
+}
+
+it('loads usable ordinary preferences when service workers are unavailable', async () => {
+  productionPush(undefined, false)
+  await mount()
+  expect(screen.queryByText('Loading notification preferences...')).toBeNull()
+  fireEvent.click(membershipToggle())
+  expect(membershipToggle().checked).toBe(false)
+  expect(state.blocker?.enableBeforeUnload).toBe(true)
+  expect((screen.getByRole('button', { name: 'Enable this browser' }) as HTMLButtonElement).disabled).toBe(true)
+})
+
+it('loads and saves preferences even when a blocked worker never becomes ready', async () => {
+  const getSubscription = vi.fn()
+  productionPush({ ready: new Promise(() => {}), pushManager: { getSubscription } })
+  await mount()
+  expect(membershipToggle().checked).toBe(true)
+  fireEvent.click(membershipToggle())
+  fireEvent.click(screen.getByRole('button', { name: 'Save preferences' }))
+  await screen.findByText('Notification preferences saved.')
+  expect(state.preferenceRow.membership_updates).toBe(false)
+  expect(getSubscription).not.toHaveBeenCalled()
+})
+
+it('keeps ordinary preferences usable when worker readiness rejects', async () => {
+  productionPush({ get ready() { return Promise.reject(new Error('Worker registration failed')) } })
+  await mount()
+  fireEvent.click(membershipToggle())
+  await waitFor(() => expect(state.blocker?.enableBeforeUnload).toBe(true))
+  expect(membershipToggle().checked).toBe(false)
+  expect((screen.getByRole('button', { name: 'Remove this browser' }) as HTMLButtonElement).disabled).toBe(true)
+})
+
+it('loads ordinary preferences even when push subscription discovery never settles', async () => {
+  const getSubscription = vi.fn(() => new Promise(() => {}))
+  productionPush({ ready: Promise.resolve({ pushManager: { getSubscription } }) })
+  await mount()
+  await waitFor(() => expect(getSubscription).toHaveBeenCalled())
+  fireEvent.click(membershipToggle())
+  expect(membershipToggle().checked).toBe(false)
+  expect(state.blocker?.enableBeforeUnload).toBe(true)
+})
+
+it('handles rejected subscription discovery without blocking the page', async () => {
+  const getSubscription = vi.fn(async () => { throw new Error('Push discovery failed') })
+  productionPush({ ready: Promise.resolve({ pushManager: { getSubscription } }) })
+  await mount()
+  await waitFor(() => expect(getSubscription).toHaveBeenCalled())
+  expect(membershipToggle().checked).toBe(true)
+  expect((screen.getByRole('button', { name: 'Remove this browser' }) as HTMLButtonElement).disabled).toBe(true)
+})
+
+it('discovers an available browser subscription without overwriting a dirty draft', async () => {
+  let resolveSubscription!: (value: { endpoint: string }) => void
+  const getSubscription = vi.fn(() => new Promise<{ endpoint: string }>(resolve => { resolveSubscription = resolve }))
+  productionPush({ ready: Promise.resolve({ pushManager: { getSubscription } }) })
+  await mount()
+  await waitFor(() => expect(getSubscription).toHaveBeenCalled())
+  fireEvent.click(membershipToggle())
+  resolveSubscription({ endpoint: subscription.endpoint })
+  await screen.findByText('Subscribed', { exact: true })
+  expect((screen.getByRole('button', { name: 'Remove this browser' }) as HTMLButtonElement).disabled).toBe(false)
+  expect(membershipToggle().checked).toBe(false)
+  expect(state.blocker?.enableBeforeUnload).toBe(true)
 })
