@@ -1,3 +1,4 @@
+import { focusInvalidRegistrationField, focusRegistrationStep } from '../lib/register-step-focus'
 import { MembershipReceiptStep } from '../components/register/MembershipReceiptStep'
 import { MEMBERSHIP_RECEIPT_BUCKET, type MembershipPayment } from '../lib/membership-fee'
 import { adminErrorMessage } from '../lib/admin/data-access'
@@ -52,6 +53,22 @@ function RegisterPage() {
   const [form, setForm] = useState<RegisterFormState>(initialRegisterForm)
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({})
   const [currentStep, setCurrentStep] = useState(0)
+  const stepContentRef = useRef<HTMLDivElement>(null)
+  const previousStep = useRef(currentStep)
+  const focusInvalidAfterStepChange = useRef(false)
+  useEffect(() => {
+    if (loading || previousStep.current === currentStep) return
+    previousStep.current = currentStep
+    const stepContent = stepContentRef.current
+    if (!stepContent) return
+
+    if (focusInvalidAfterStepChange.current) {
+      focusInvalidAfterStepChange.current = false
+      if (focusInvalidRegistrationField(stepContent)) return
+    }
+
+    focusRegistrationStep(stepContent)
+  }, [currentStep, loading])
 
   const [receipt, setReceipt] = useState<File | null>(null)
   const [payment, setPayment] = useState<MembershipPayment | null>(null)
@@ -327,14 +344,12 @@ function RegisterPage() {
     setError('')
     setSuccess('')
     setCurrentStep((step) => Math.min(step + 1, registerFormSteps.length - 1))
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function handlePreviousStep() {
     setError('')
     setSuccess('')
     setCurrentStep((step) => Math.max(step - 1, 0))
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function handleStepClick(targetStep: number) {
@@ -342,7 +357,6 @@ function RegisterPage() {
       setCurrentStep(targetStep)
       setError('')
       setSuccess('')
-      window.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
 
@@ -357,7 +371,6 @@ function RegisterPage() {
     setCurrentStep(targetStep)
     setError('')
     setSuccess('')
-    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   function saveDraft() {
@@ -420,12 +433,14 @@ function RegisterPage() {
         (step) => firstField && step.fields.includes(firstField),
       )
 
-      if (targetStep >= 0) {
-        setCurrentStep(targetStep)
-      }
-
       setError(t('register.error.fixHighlightedSubmit'))
-      focusFirstInvalidRegisterField()
+
+      if (targetStep >= 0 && targetStep !== currentStep) {
+        focusInvalidAfterStepChange.current = true
+        setCurrentStep(targetStep)
+      } else {
+        focusFirstInvalidRegisterField()
+      }
       return
     }
 
@@ -704,7 +719,7 @@ function RegisterPage() {
           ) : null}
 
           <form onSubmit={handleSubmit} className="reg-form" noValidate>
-            {renderCurrentStep()}
+            <div ref={stepContentRef}>{renderCurrentStep()}</div>
 
             <div className="reg-actions">
               <div className="reg-actions-left">

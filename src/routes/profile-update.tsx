@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useBlocker, useNavigate } from '@tanstack/react-router'
 import {
   AlertCircle,
   ArrowLeft,
@@ -19,6 +19,7 @@ import {
   type ReactNode,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react'
 import { useI18n } from '../lib/i18n'
@@ -83,6 +84,8 @@ const copy = {
     cancel: 'Cancel Pending Request',
     cancelling: 'Cancelling…',
     reset: 'Reset Form',
+    leaveConfirm: 'Leave this page? Your unsent profile changes will be lost.',
+    resetConfirm: 'Discard your unsent profile changes and reset the form?',
     noChanges: 'Change at least one profile value or select a new photo.',
     historyTitle: 'Request history',
     historyText: 'Review submitted, approved, rejected, and cancelled requests.',
@@ -123,6 +126,8 @@ const copy = {
     cancel: 'زیرِ جائزہ درخواست منسوخ کریں',
     cancelling: 'منسوخ ہو رہی ہے…',
     reset: 'فارم ری سیٹ کریں',
+    leaveConfirm: 'صفحہ چھوڑ دیں؟ آپ کی غیر جمع شدہ پروفائل تبدیلیاں ضائع ہو جائیں گی۔',
+    resetConfirm: 'غیر جمع شدہ پروفائل تبدیلیاں ختم کرکے فارم ری سیٹ کریں؟',
     noChanges: 'کم از کم ایک معلومات تبدیل کریں یا نئی تصویر منتخب کریں۔',
     historyTitle: 'درخواستوں کی تاریخ',
     historyText: 'جمع شدہ، منظور، مسترد اور منسوخ درخواستیں دیکھیں۔',
@@ -163,6 +168,8 @@ const copy = {
     cancel: 'جائزي هيٺ درخواست رد ڪريو',
     cancelling: 'رد ٿي رهي آهي…',
     reset: 'فارم ري سيٽ ڪريو',
+    leaveConfirm: 'هي صفحو ڇڏڻ چاهيو ٿا؟ توهان جون جمع نه ٿيل پروفائل تبديليون ضايع ٿي وينديون.',
+    resetConfirm: 'جمع نه ٿيل پروفائل تبديليون ختم ڪري فارم ري سيٽ ڪريو؟',
     noChanges: 'گهٽ ۾ گهٽ هڪ ڄاڻ تبديل ڪريو يا نئين تصوير چونڊيو.',
     historyTitle: 'درخواستن جي تاريخ',
     historyText: 'جمع، منظور، رد ۽ منسوخ درخواستون ڏسو.',
@@ -224,11 +231,24 @@ function ProfileUpdatePage() {
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const photoInputRef = useRef<HTMLInputElement>(null)
+  const [savedValues, setSavedValues] = useState<{
+    draft: ProfileUpdateDraft | null; note: string; photo: File | null
+  } | null>(null)
 
   const pendingRequest = useMemo(
     () => requests.find((request) => request.status === 'pending') ?? null,
     [requests],
   )
+
+  const dirty = Boolean(member?.status === 'approved' && !pendingRequest && savedValues && (
+    JSON.stringify(draft) !== JSON.stringify(savedValues.draft) ||
+    memberNote !== savedValues.note || photo !== savedValues.photo
+  ))
+  useBlocker({
+    shouldBlockFn: () => dirty && !window.confirm(text.leaveConfirm),
+    enableBeforeUnload: dirty,
+  })
 
   useEffect(() => {
     void loadPage()
@@ -273,7 +293,9 @@ function ProfileUpdatePage() {
     }
 
     setMember(memberData)
-    setDraft(memberData ? memberToProfileUpdateDraft(memberData) : null)
+    const loadedDraft = memberData ? memberToProfileUpdateDraft(memberData) : null
+    setDraft(loadedDraft)
+    setSavedValues({ draft: loadedDraft, note: '', photo: null })
     setPhoto(null)
     setMemberNote('')
     setErrors({})
@@ -339,7 +361,11 @@ function ProfileUpdatePage() {
 
   function resetForm() {
     if (!member) return
-    setDraft(memberToProfileUpdateDraft(member))
+    if (dirty && !window.confirm(text.resetConfirm)) return
+    const resetDraft = memberToProfileUpdateDraft(member)
+    setDraft(resetDraft)
+    setSavedValues({ draft: resetDraft, note: '', photo: null })
+    if (photoInputRef.current) photoInputRef.current.value = ''
     setMemberNote('')
     setPhoto(null)
     setErrors({})
@@ -412,6 +438,8 @@ function ProfileUpdatePage() {
 
       if (requestError) throw new Error(requestError.message)
 
+      // The RPC accepted this snapshot; a subsequent refresh failure must not warn about unsent edits.
+      setSavedValues({ draft, note: memberNote, photo })
       setSuccess(text.success)
       await loadPage()
     } catch (submitError) {
@@ -852,13 +880,15 @@ function ProfileUpdatePage() {
                   fallback={<FilePenLine className="h-8 w-8 text-slate-400" />}
                 />
                 <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-5">
-                  <label className="block text-sm font-black text-slate-900">
+                  <label htmlFor="profile-update-photo" className="block text-sm font-black text-slate-900">
                     {text.photoTitle}
                   </label>
                   <p className="mt-1 text-xs leading-5 text-slate-500">
                     {text.photoHelp}
                   </p>
                   <input
+                    id="profile-update-photo"
+                    ref={photoInputRef}
                     type="file"
                     accept={PROFILE_UPDATE_ALLOWED_PHOTO_TYPES.join(',')}
                     onChange={handlePhotoChange}
@@ -876,7 +906,9 @@ function ProfileUpdatePage() {
             </FormSection>
 
             <FormSection title={text.noteLabel}>
+              <label htmlFor="profile-reviewer-note" className="sr-only">{text.noteLabel}</label>
               <textarea
+                id="profile-reviewer-note"
                 value={memberNote}
                 onChange={(event) => setMemberNote(event.target.value.slice(0, 500))}
                 disabled={Boolean(pendingRequest) || saving}
