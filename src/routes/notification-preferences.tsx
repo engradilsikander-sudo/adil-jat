@@ -1,4 +1,4 @@
-import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, Link, useBlocker, useNavigate } from '@tanstack/react-router'
 import {
   AlertTriangle,
   Bell,
@@ -43,12 +43,35 @@ type PushSubscriptionJson = {
   }
 }
 
+const PREFERENCE_KEYS: (keyof PreferenceState)[] = [
+  'web_push_enabled',
+  'membership_updates',
+  'program_updates',
+  'finance_updates',
+  'general_updates',
+]
+
+const LEAVE_WITH_UNSAVED_PREFERENCES =
+  'You have unsaved notification preference changes. Leave without saving them?'
+const REFRESH_WITH_UNSAVED_PREFERENCES =
+  'Refreshing will discard your unsaved notification preference changes. Continue?'
+
+function notificationPreferencesEqual(
+  left: PreferenceState,
+  right: PreferenceState,
+) {
+  return PREFERENCE_KEYS.every((key) => left[key] === right[key])
+}
+
 function NotificationPreferencesPage() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [browserAction, setBrowserAction] = useState(false)
   const [preferences, setPreferences] = useState<PreferenceState>({
+    ...DEFAULT_NOTIFICATION_PREFERENCES,
+  })
+  const [savedPreferences, setSavedPreferences] = useState<PreferenceState>({
     ...DEFAULT_NOTIFICATION_PREFERENCES,
   })
   const [subscriptions, setSubscriptions] = useState<PushSubscriptionRow[]>([])
@@ -61,12 +84,24 @@ function NotificationPreferencesPage() {
   const pushConfigured = Boolean(VAPID_PUBLIC_KEY)
   const canUseBrowserPush =
     browserSupported && pushConfigured && !import.meta.env.DEV
+  const dirty = useMemo(
+    () =>
+      !loading &&
+      !notificationPreferencesEqual(preferences, savedPreferences),
+    [loading, preferences, savedPreferences],
+  )
+
+  useBlocker({
+    shouldBlockFn: () =>
+      dirty && !window.confirm(LEAVE_WITH_UNSAVED_PREFERENCES),
+    enableBeforeUnload: dirty,
+  })
 
   useEffect(() => {
     void loadPreferences()
   }, [])
 
-  async function loadPreferences(options?: { silent?: boolean }) {
+  async function loadPreferences(options?: { silent?: boolean; preserveDraft?: boolean }) {
     if (!options?.silent) setLoading(true)
     setError('')
 
@@ -101,7 +136,11 @@ function NotificationPreferencesPage() {
     if (preferenceError) {
       setError(migrationMessage(preferenceError.message))
     } else {
-      setPreferences(normalizeNotificationPreferences(preferenceRow))
+      const loadedPreferences = normalizeNotificationPreferences(preferenceRow)
+      setSavedPreferences(loadedPreferences)
+      if (!options?.preserveDraft) {
+        setPreferences(loadedPreferences)
+      }
     }
 
     if (subscriptionResult.error) {
@@ -159,6 +198,7 @@ function NotificationPreferencesPage() {
       setError(migrationMessage(saveError.message))
     } else {
       setPreferences(nextPreferences)
+      setSavedPreferences(nextPreferences)
       setMessage('Notification preferences saved.')
       window.dispatchEvent(
         new CustomEvent('jas-web-push-preferences-updated'),
@@ -257,7 +297,7 @@ function NotificationPreferencesPage() {
       }
 
       const nextPreferences = {
-        ...preferences,
+        ...savedPreferences,
         web_push_enabled: true,
       }
       const { error: preferenceError } = await supabase
@@ -276,9 +316,13 @@ function NotificationPreferencesPage() {
       }
 
       setCurrentEndpoint(endpoint)
-      setPreferences(nextPreferences)
+      setSavedPreferences(nextPreferences)
+      setPreferences((current) => ({
+        ...current,
+        web_push_enabled: true,
+      }))
       setMessage('Browser notifications enabled for this device.')
-      await loadPreferences({ silent: true })
+      await loadPreferences({ silent: true, preserveDraft: true })
       window.dispatchEvent(
         new CustomEvent('jas-web-push-preferences-updated'),
       )
@@ -329,7 +373,7 @@ function NotificationPreferencesPage() {
       await browserSubscription.unsubscribe()
       setCurrentEndpoint(null)
       setMessage('This browser was removed from push notifications.')
-      await loadPreferences({ silent: true })
+      await loadPreferences({ silent: true, preserveDraft: true })
       window.dispatchEvent(
         new CustomEvent('jas-web-push-preferences-updated'),
       )
@@ -373,7 +417,7 @@ function NotificationPreferencesPage() {
       supabase.from('notification_preferences').upsert(
         {
           user_id: user.id,
-          ...preferences,
+          ...savedPreferences,
           web_push_enabled: false,
         },
         { onConflict: 'user_id' },
@@ -401,17 +445,27 @@ function NotificationPreferencesPage() {
       }
     }
 
+    const nextSavedPreferences = {
+      ...savedPreferences,
+      web_push_enabled: false,
+    }
+    setSavedPreferences(nextSavedPreferences)
     setPreferences((current) => ({
       ...current,
       web_push_enabled: false,
     }))
     setCurrentEndpoint(null)
     setMessage('Web push paused and all saved browser devices disabled.')
-    await loadPreferences({ silent: true })
+    await loadPreferences({ silent: true, preserveDraft: true })
     window.dispatchEvent(
       new CustomEvent('jas-web-push-preferences-updated'),
     )
     setBrowserAction(false)
+  }
+
+  async function refreshPreferences() {
+    if (dirty && !window.confirm(REFRESH_WITH_UNSAVED_PREFERENCES)) return
+    await loadPreferences({ silent: true })
   }
 
   if (loading) {
@@ -640,7 +694,7 @@ function NotificationPreferencesPage() {
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => void loadPreferences({ silent: true })}
+                onClick={() => void refreshPreferences()}
                 disabled={browserAction}
                 className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-4 text-sm font-black text-slate-700 transition hover:bg-slate-50"
               >

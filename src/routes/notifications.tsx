@@ -30,6 +30,7 @@ function NotificationsPage() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [loadingMore, setLoadingMore] = useState(false)
+  const [markingAllRead, setMarkingAllRead] = useState(false)
   const [message, setMessage] = useState('')
   const [totalCount, setTotalCount] = useState(0)
   const [hasMore, setHasMore] = useState(false)
@@ -80,19 +81,11 @@ function NotificationsPage() {
     }
 
     const nextItems = (data || []) as UserNotification[]
-    const readAt = new Date().toISOString()
-    const hasUnreadItems = nextItems.some((item) => !item.is_read)
-    const displayItems = nextItems.map((item) =>
-      item.is_read
-        ? item
-        : {
-            ...item,
-            is_read: true,
-            read_at: item.read_at || readAt,
-          },
-    )
-    const nextCount = count ?? (append ? items.length + displayItems.length : displayItems.length)
-    const mergedItems = append ? [...items, ...displayItems] : displayItems
+    const nextCount = count ?? (append ? items.length + nextItems.length : nextItems.length)
+    const mergedItems = append ? [...items, ...nextItems] : nextItems
+    const unreadIds = nextItems
+      .filter((item) => !item.is_read)
+      .map((item) => item.id)
 
     setItems(mergedItems)
     setTotalCount(nextCount)
@@ -101,36 +94,60 @@ function NotificationsPage() {
     setRefreshing(false)
     setLoadingMore(false)
 
-    if (hasUnreadItems) {
+    if (unreadIds.length > 0) {
+      const readAt = new Date().toISOString()
       const { error: readError } = await supabase
         .from('notifications')
         .update({ is_read: true, read_at: readAt })
         .eq('user_id', user.id)
         .eq('is_read', false)
+        .in('id', unreadIds)
 
       if (readError) {
         setMessage(readError.message)
+        return
       }
-    }
 
-    window.dispatchEvent(new CustomEvent('jas-notifications-updated'))
+      const unreadIdSet = new Set(unreadIds)
+      setItems((current) =>
+        current.map((item) =>
+          unreadIdSet.has(item.id)
+            ? {
+                ...item,
+                is_read: true,
+                read_at: item.read_at || readAt,
+              }
+            : item,
+        ),
+      )
+      window.dispatchEvent(new CustomEvent('jas-notifications-updated'))
+    }
   }
 
   async function markAllRead() {
+    setMarkingAllRead(true)
+    setMessage('')
+
     const {
       data: { user },
+      error: userError,
     } = await supabase.auth.getUser()
 
-    if (!user) return
+    if (userError || !user) {
+      setMarkingAllRead(false)
+      return
+    }
 
+    const readAt = new Date().toISOString()
     const { error } = await supabase
       .from('notifications')
-      .update({ is_read: true, read_at: new Date().toISOString() })
+      .update({ is_read: true, read_at: readAt })
       .eq('user_id', user.id)
       .eq('is_read', false)
 
     if (error) {
       setMessage(error.message)
+      setMarkingAllRead(false)
       return
     }
 
@@ -138,9 +155,10 @@ function NotificationsPage() {
       current.map((item) => ({
         ...item,
         is_read: true,
-        read_at: item.read_at || new Date().toISOString(),
+        read_at: item.read_at || readAt,
       })),
     )
+    setMarkingAllRead(false)
     window.dispatchEvent(new CustomEvent('jas-notifications-updated'))
   }
 
@@ -186,10 +204,14 @@ function NotificationsPage() {
                 <button
                   type="button"
                   onClick={markAllRead}
-                  disabled={unreadCount === 0}
+                  disabled={markingAllRead || totalCount === 0}
                   className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-amber-400 px-5 text-sm font-black text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  <CheckCircle2 className="h-4 w-4" />
+                  {markingAllRead ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <CheckCircle2 className="h-4 w-4" />
+                  )}
                   Mark all read
                 </button>
                 <button
@@ -216,7 +238,7 @@ function NotificationsPage() {
 
           <div className="grid gap-4 p-5 md:grid-cols-3 md:p-6">
             <StatCard title="Total Updates" value={totalCount} />
-            <StatCard title="Unread" value={unreadCount} />
+            <StatCard title="Unread Loaded" value={unreadCount} />
             <StatCard title="Loaded" value={items.length} />
           </div>
         </section>
