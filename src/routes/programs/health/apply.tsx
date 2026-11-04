@@ -10,7 +10,10 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react'
-import { type ChangeEvent, type FormEvent, type ReactNode, useState } from 'react'
+import { type ChangeEvent, type FormEvent, type ReactNode, useRef, useState } from 'react'
+import { useProgramApplicationContinuity } from '../../../hooks/useProgramApplicationContinuity'
+import { uploadRemainingProgramDocuments, type ProgramDocumentUploadProgress } from '../../../lib/programs/upload-recovery'
+import { ProgramApplicationRecovery } from '../../../components/programs/ProgramApplicationRecovery'
 import { supabase } from '../../../lib/supabase/client'
 import { useProgramApplyCopy } from '../../../lib/program-apply-i18n'
 import {
@@ -96,8 +99,14 @@ function HealthApplyPage() {
   const [verifiedMember, setVerifiedMember] =
     useState<VerifyMembershipResult | null>(null)
   const [verifying, setVerifying] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+
   const [message, setMessage] = useState('')
+
+  const continuity = useProgramApplicationContinuity({
+    form, initialForm, files: documentFiles, leaveConfirm: copy.common.leaveConfirm,
+  })
+  const { submitting } = continuity
+  const uploadProgressRef = useRef(new Map<HealthDocumentType, ProgramDocumentUploadProgress>())
 
   function updateField<K extends keyof HealthFormState>(
     key: K,
@@ -197,70 +206,32 @@ function HealthApplyPage() {
     return ''
   }
 
-  async function uploadApplicationDocuments({
-    userId,
-    applicationId,
-  }: {
-    userId: string
-    applicationId: string
-  }) {
-    const selectedDocuments = healthDocumentOptions.filter(
-      (document) => documentFiles[document.type],
-    )
-
-    for (const document of selectedDocuments) {
-      const file = documentFiles[document.type]
-      if (!file) continue
-
-      const validation = validateHealthDocumentFile(file)
-      if (!validation.ok) {
-        throw new Error(`${document.label}: ${validation.message}`)
-      }
-
-      const filePath = createHealthDocumentStoragePath({
-        userId,
-        applicationId,
-        documentType: document.type,
-        fileName: file.name,
-      })
-
-      const { error: uploadError } = await supabase.storage
-        .from(HEALTH_DOCUMENT_BUCKET)
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          contentType: file.type || undefined,
-          upsert: false,
+  async function uploadApplicationDocuments({ userId, applicationId }: { userId: string; applicationId: string }) {
+    await uploadRemainingProgramDocuments({
+      options: healthDocumentOptions, files: documentFiles, progress: uploadProgressRef.current,
+      makePath: (type, file) => createHealthDocumentStoragePath({ userId, applicationId, documentType: type, fileName: file.name }),
+      validate: (_type, file) => { const check = validateHealthDocumentFile(file); return check.ok ? null : check.message },
+      upload: async (_type, file, path) => {
+        const { error } = await supabase.storage.from(HEALTH_DOCUMENT_BUCKET).upload(path, file, { cacheControl: '3600', contentType: file.type || undefined, upsert: false })
+        if (error) throw new Error(error.message)
+      },
+      record: async (type, file, path) => {
+        const { error } = await supabase.from('program_documents').insert({
+          application_id: applicationId, program_key: 'health', uploaded_by: userId,
+          document_type: type, file_path: path, file_name: file.name,
+          mime_type: file.type || null, file_size: file.size,
+          verification_status: 'pending', is_verified: false,
         })
-
-      if (uploadError) {
-        throw new Error(`${document.label}: ${uploadError.message}`)
-      }
-
-      const { error: documentError } = await supabase
-        .from('program_documents')
-        .insert({
-          application_id: applicationId,
-          program_key: 'health',
-          uploaded_by: userId,
-          document_type: document.type,
-          file_path: filePath,
-          file_name: file.name,
-          mime_type: file.type || null,
-          file_size: file.size,
-          verification_status: 'pending',
-          is_verified: false,
-        })
-
-      if (documentError) {
-        throw new Error(`${document.label}: ${documentError.message}`)
-      }
-    }
+        if (error) throw new Error(error.message)
+      },
+    })
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (!continuity.start()) return
     setMessage('')
-
+    try {
     const {
       data: { user },
       error: userError,
@@ -302,8 +273,6 @@ function HealthApplyPage() {
       return
     }
 
-    setSubmitting(true)
-
     const details = {
       patient_age: form.patientAge.trim(),
       patient_gender: form.patientGender,
@@ -342,28 +311,50 @@ function HealthApplyPage() {
       .single()
 
     if (applicationError || !applicationRow?.id) {
-      setSubmitting(false)
       setMessage(applicationError?.message || 'Application submit nahi ho saki.')
       return
     }
-
-    try {
-      await uploadApplicationDocuments({
-        userId: user.id,
-        applicationId: applicationRow.id,
-      })
+    continuity.markSaved(applicationRow.id, user.id)
+      await uploadApplicationDocuments({ userId: user.id, applicationId: applicationRow.id })
+      continuity.complete()
+      await navigate({ to: '/programs/health/my-applications' })
     } catch (error) {
-      setSubmitting(false)
-      setMessage(
-        error instanceof Error
-          ? `Application submit ho gayi, lekin document upload me issue aya: ${error.message}`
-          : 'Application submit ho gayi, lekin document upload me issue aya.',
-      )
-      return
+      setMessage(continuity.savedRef.current
+        ? `${copy.common.uploadProblem} ${error instanceof Error ? error.message : ''}`
+        : copy.common.unexpectedError)
+    } finally {
+      continuity.stop()
     }
+  }
 
-    setSubmitting(false)
-    await navigate({ to: '/programs/health/my-applications' })
+  async function retryUploads() {
+    if (!continuity.start()) return
+    setMessage('')
+    try {
+      const saved = continuity.savedRef.current
+      if (!saved) return
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (error || user?.id !== saved.userId) {
+        setMessage(copy.common.sessionChanged)
+        return
+      }
+      await uploadApplicationDocuments({ userId: saved.userId, applicationId: saved.id })
+      continuity.complete()
+      await navigate({ to: '/programs/health/my-applications' })
+    } catch (error) {
+      setMessage(`${copy.common.uploadProblem} ${error instanceof Error ? error.message : ''}`)
+    } finally {
+      continuity.stop()
+    }
+  }
+
+  if (continuity.savedApplication) {
+    return <ProgramApplicationRecovery
+      title={copy.common.savedTitle} description={copy.common.savedDescription}
+      retryLabel={copy.common.retryUploads} viewLabel={copy.common.viewApplications}
+      inProgressLabel={copy.common.uploadPending} message={message} busy={submitting}
+      onRetry={() => { void retryUploads() }} to="/programs/health/my-applications" dir={textDir}
+    />
   }
 
   return (
@@ -388,7 +379,8 @@ function HealthApplyPage() {
       </section>
 
       <section className="px-4 py-10 md:py-16">
-        <form onSubmit={handleSubmit} className="program-apply-form mx-auto grid max-w-6xl gap-6">
+        <form onSubmit={handleSubmit} aria-busy={submitting} className="program-apply-form mx-auto grid max-w-6xl gap-6">
+          <fieldset disabled={submitting} className="contents">
           <FormCard title={copy.common.membershipVerification}>
             <p className="text-sm leading-7 text-slate-600">
               {copy.common.verifyMembershipText}
@@ -586,7 +578,7 @@ function HealthApplyPage() {
           </FormCard>
 
           {message ? (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900">
+            <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900">
               {message}
             </div>
           ) : null}
@@ -623,6 +615,7 @@ function HealthApplyPage() {
               </button>
             </div>
           </div>
+        </fieldset>
         </form>
       </section>
     </main>

@@ -9,7 +9,10 @@ import {
   Trash2,
   Upload,
 } from "lucide-react";
-import { type ChangeEvent, type FormEvent, useState } from "react";
+import { type ChangeEvent, type FormEvent, useRef, useState } from "react";
+import { useProgramApplicationContinuity } from '../../../hooks/useProgramApplicationContinuity'
+import { uploadRemainingProgramDocuments, type ProgramDocumentUploadProgress } from '../../../lib/programs/upload-recovery'
+import { ProgramApplicationRecovery } from '../../../components/programs/ProgramApplicationRecovery'
 import { supabase } from "../../../lib/supabase/client";
 import { useProgramApplyCopy } from "../../../lib/program-apply-i18n";
 import {
@@ -101,8 +104,14 @@ function EducationApplyPage() {
   const [verifiedMember, setVerifiedMember] =
     useState<VerifyMembershipResult | null>(null);
   const [verifying, setVerifying] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+
   const [message, setMessage] = useState("");
+
+  const continuity = useProgramApplicationContinuity({
+    form, initialForm, files: documentFiles, leaveConfirm: copy.common.leaveConfirm,
+  })
+  const { submitting } = continuity
+  const uploadProgressRef = useRef(new Map<EducationDocumentType, ProgramDocumentUploadProgress>())
 
   function updateField<K extends keyof EducationFormState>(
     key: K,
@@ -208,72 +217,32 @@ function EducationApplyPage() {
     return "";
   }
 
-  async function uploadApplicationDocuments({
-    userId,
-    applicationId,
-  }: {
-    userId: string;
-    applicationId: string;
-  }) {
-    const selectedDocuments = educationDocumentOptions.filter(
-      (document) => documentFiles[document.type],
-    );
-
-    for (const document of selectedDocuments) {
-      const file = documentFiles[document.type];
-
-      if (!file) continue;
-
-      const validation = validateEducationDocumentFile(file);
-
-      if (!validation.ok) {
-        throw new Error(`${document.label}: ${validation.message}`);
-      }
-
-      const filePath = createEducationDocumentStoragePath({
-        userId,
-        applicationId,
-        documentType: document.type,
-        fileName: file.name,
-      });
-
-      const { error: uploadError } = await supabase.storage
-        .from(EDUCATION_DOCUMENT_BUCKET)
-        .upload(filePath, file, {
-          cacheControl: "3600",
-          contentType: file.type || undefined,
-          upsert: false,
-        });
-
-      if (uploadError) {
-        throw new Error(`${document.label}: ${uploadError.message}`);
-      }
-
-      const { error: documentError } = await supabase
-        .from("program_documents")
-        .insert({
-          application_id: applicationId,
-          program_key: "education",
-          uploaded_by: userId,
-          document_type: document.type,
-          file_path: filePath,
-          file_name: file.name,
-          mime_type: file.type || null,
-          file_size: file.size,
-          verification_status: "pending",
-          is_verified: false,
-        });
-
-      if (documentError) {
-        throw new Error(`${document.label}: ${documentError.message}`);
-      }
-    }
+  async function uploadApplicationDocuments({ userId, applicationId }: { userId: string; applicationId: string }) {
+    await uploadRemainingProgramDocuments({
+      options: educationDocumentOptions, files: documentFiles, progress: uploadProgressRef.current,
+      makePath: (type, file) => createEducationDocumentStoragePath({ userId, applicationId, documentType: type, fileName: file.name }),
+      validate: (_type, file) => { const check = validateEducationDocumentFile(file); return check.ok ? null : check.message },
+      upload: async (_type, file, path) => {
+        const { error } = await supabase.storage.from(EDUCATION_DOCUMENT_BUCKET).upload(path, file, { cacheControl: '3600', contentType: file.type || undefined, upsert: false })
+        if (error) throw new Error(error.message)
+      },
+      record: async (type, file, path) => {
+        const { error } = await supabase.from('program_documents').insert({
+          application_id: applicationId, program_key: 'education', uploaded_by: userId,
+          document_type: type, file_path: path, file_name: file.name,
+          mime_type: file.type || null, file_size: file.size,
+          verification_status: 'pending', is_verified: false,
+        })
+        if (error) throw new Error(error.message)
+      },
+    })
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMessage("");
-
+    event.preventDefault()
+    if (!continuity.start()) return
+    setMessage('')
+    try {
     const {
       data: { user },
       error: userError,
@@ -310,8 +279,6 @@ function EducationApplyPage() {
       setMessage(documentError);
       return;
     }
-
-    setSubmitting(true);
 
     const details = {
       guardian_name: form.guardianName.trim(),
@@ -350,28 +317,50 @@ function EducationApplyPage() {
       .single();
 
     if (applicationError || !applicationRow?.id) {
-      setSubmitting(false);
       setMessage(applicationError?.message || "Application submit nahi ho saki.");
       return;
     }
-
-    try {
-      await uploadApplicationDocuments({
-        userId: user.id,
-        applicationId: applicationRow.id,
-      });
+    continuity.markSaved(applicationRow.id, user.id)
+      await uploadApplicationDocuments({ userId: user.id, applicationId: applicationRow.id })
+      continuity.complete()
+      await navigate({ to: '/programs/education/my-applications' })
     } catch (error) {
-      setSubmitting(false);
-      setMessage(
-        error instanceof Error
-          ? `Application submit ho gayi, lekin document upload me issue aya: ${error.message}`
-          : "Application submit ho gayi, lekin document upload me issue aya.",
-      );
-      return;
+      setMessage(continuity.savedRef.current
+        ? `${copy.common.uploadProblem} ${error instanceof Error ? error.message : ''}`
+        : copy.common.unexpectedError)
+    } finally {
+      continuity.stop()
     }
+  }
 
-    setSubmitting(false);
-    navigate({ to: "/programs/education/my-applications" });
+  async function retryUploads() {
+    if (!continuity.start()) return
+    setMessage('')
+    try {
+      const saved = continuity.savedRef.current
+      if (!saved) return
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (error || user?.id !== saved.userId) {
+        setMessage(copy.common.sessionChanged)
+        return
+      }
+      await uploadApplicationDocuments({ userId: saved.userId, applicationId: saved.id })
+      continuity.complete()
+      await navigate({ to: '/programs/education/my-applications' })
+    } catch (error) {
+      setMessage(`${copy.common.uploadProblem} ${error instanceof Error ? error.message : ''}`)
+    } finally {
+      continuity.stop()
+    }
+  }
+
+  if (continuity.savedApplication) {
+    return <ProgramApplicationRecovery
+      title={copy.common.savedTitle} description={copy.common.savedDescription}
+      retryLabel={copy.common.retryUploads} viewLabel={copy.common.viewApplications}
+      inProgressLabel={copy.common.uploadPending} message={message} busy={submitting}
+      onRetry={() => { void retryUploads() }} to="/programs/education/my-applications" dir={textDir}
+    />
   }
 
   return (
@@ -397,9 +386,10 @@ function EducationApplyPage() {
 
       <section className="px-4 py-10 md:py-16">
         <form
-          onSubmit={handleSubmit}
+          onSubmit={handleSubmit} aria-busy={submitting}
           className="program-apply-form mx-auto grid max-w-6xl gap-6"
         >
+          <fieldset disabled={submitting} className="contents">
           <div className="program-apply-card rounded-3xl border border-slate-200 bg-white p-6 shadow-sm md:p-8">
             <h2 className="text-2xl font-black text-slate-950">
               {copy.common.membershipVerification}
@@ -786,6 +776,7 @@ function EducationApplyPage() {
               <ArrowRight className={`h-4 w-4 ${arrowClass}`} />
             </button>
           </div>
+        </fieldset>
         </form>
       </section>
     </main>

@@ -8,10 +8,12 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react'
-import { type ChangeEvent, type FormEvent, type ReactNode, useState } from 'react'
+import { type ChangeEvent, type FormEvent, type ReactNode, useRef, useState } from 'react'
+import { useProgramApplicationContinuity } from '../../../hooks/useProgramApplicationContinuity'
+import { uploadRemainingProgramDocuments, type ProgramDocumentUploadProgress } from '../../../lib/programs/upload-recovery'
+import { ProgramApplicationRecovery } from '../../../components/programs/ProgramApplicationRecovery'
 import { supabase } from '../../../lib/supabase/client'
 import { useProgramApplyCopy } from '../../../lib/program-apply-i18n'
-import type { Database } from '../../../lib/supabase/database.types'
 import {
   EMPLOYMENT_DOCUMENT_ACCEPT,
   EMPLOYMENT_DOCUMENT_BUCKET,
@@ -35,8 +37,6 @@ import {
 export const Route = createFileRoute('/programs/employment/apply')({
   component: EmploymentApplyPage,
 })
-
-type ProgramDocumentInsert = Database['public']['Tables']['program_documents']['Insert']
 
 type FormState = {
   membershipNo: string
@@ -78,9 +78,15 @@ function EmploymentApplyPage() {
   const [form, setForm] = useState<FormState>(initialForm)
   const [membership, setMembership] = useState<VerifyMembershipResult | null>(null)
   const [verifying, setVerifying] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+
   const [message, setMessage] = useState('')
   const [files, setFiles] = useState<Partial<Record<EmploymentDocumentType, File>>>({})
+
+  const continuity = useProgramApplicationContinuity({
+    form, initialForm, files: files, leaveConfirm: copy.common.leaveConfirm,
+  })
+  const { submitting } = continuity
+  const uploadProgressRef = useRef(new Map<EmploymentDocumentType, ProgramDocumentUploadProgress>())
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [key]: value }))
@@ -147,10 +153,32 @@ function EmploymentApplyPage() {
     })
   }
 
+  async function uploadApplicationDocuments({ userId, applicationId }: { userId: string; applicationId: string }) {
+    await uploadRemainingProgramDocuments({
+      options: employmentDocumentOptions, files, progress: uploadProgressRef.current,
+      makePath: (type, file) => createEmploymentDocumentStoragePath({ userId, applicationId, documentType: type, fileName: file.name }),
+      validate: (_type, file) => validateEmploymentDocumentFile(file),
+      upload: async (_type, file, path) => {
+        const { error } = await supabase.storage.from(EMPLOYMENT_DOCUMENT_BUCKET).upload(path, file, { upsert: false, contentType: file.type })
+        if (error) throw new Error(error.message)
+      },
+      record: async (type, file, path) => {
+        const { error } = await supabase.from('program_documents').insert({
+          application_id: applicationId, program_key: 'employment', uploaded_by: userId,
+          document_type: type, file_path: path, file_name: file.name,
+          mime_type: file.type || null, file_size: file.size,
+          verification_status: 'pending', is_verified: false,
+        })
+        if (error) throw new Error(error.message)
+      },
+    })
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (!continuity.start()) return
     setMessage('')
-
+    try {
     const {
       data: { user },
       error: userError,
@@ -177,8 +205,6 @@ function EmploymentApplyPage() {
       setMessage('Education, skills aur preferred job location required hain.')
       return
     }
-
-    setSubmitting(true)
 
     const details = {
       father_name: membership.member.father_name,
@@ -222,65 +248,53 @@ function EmploymentApplyPage() {
       .single()
 
     if (applicationError || !application) {
-      setSubmitting(false)
       setMessage(applicationError?.message || 'Employment profile submit nahi ho saka.')
       return
     }
+    continuity.markSaved(application.id, user.id)
+      await uploadApplicationDocuments({ userId: user.id, applicationId: application.id })
+      continuity.complete()
+      await navigate({ to: '/programs/employment/my-applications' })
+    } catch (error) {
+      setMessage(continuity.savedRef.current
+        ? `${copy.common.uploadProblem} ${error instanceof Error ? error.message : ''}`
+        : copy.common.unexpectedError)
+    } finally {
+      continuity.stop()
+    }
+  }
 
-    const documentRows: ProgramDocumentInsert[] = []
-
-    for (const option of employmentDocumentOptions) {
-      const file = files[option.type]
-      if (!file) continue
-
-      const filePath = createEmploymentDocumentStoragePath({
-        userId: user.id,
-        applicationId: application.id,
-        documentType: option.type,
-        fileName: file.name,
-      })
-
-      const { error: uploadError } = await supabase.storage
-        .from(EMPLOYMENT_DOCUMENT_BUCKET)
-        .upload(filePath, file, { upsert: false, contentType: file.type })
-
-      if (uploadError) {
-        setSubmitting(false)
-        setMessage(`Application save ho gayi, lekin ${option.label} upload nahi hui: ${uploadError.message}`)
+  async function retryUploads() {
+    if (!continuity.start()) return
+    setMessage('')
+    try {
+      const saved = continuity.savedRef.current
+      if (!saved) return
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (error || user?.id !== saved.userId) {
+        setMessage(copy.common.sessionChanged)
         return
       }
-
-      documentRows.push({
-        application_id: application.id,
-        program_key: 'employment',
-        document_type: option.type,
-        file_path: filePath,
-        file_name: file.name,
-        file_size: file.size,
-        mime_type: file.type,
-        uploaded_by: user.id,
-        verification_status: 'pending',
-        is_verified: false,
-      })
+      await uploadApplicationDocuments({ userId: saved.userId, applicationId: saved.id })
+      continuity.complete()
+      await navigate({ to: '/programs/employment/my-applications' })
+    } catch (error) {
+      setMessage(`${copy.common.uploadProblem} ${error instanceof Error ? error.message : ''}`)
+    } finally {
+      continuity.stop()
     }
-
-    if (documentRows.length) {
-      const { error: docsError } = await supabase
-        .from('program_documents')
-        .insert(documentRows)
-
-      if (docsError) {
-        setSubmitting(false)
-        setMessage(`Application save ho gayi, lekin document records save nahi hue: ${docsError.message}`)
-        return
-      }
-    }
-
-    setSubmitting(false)
-    await navigate({ to: '/programs/employment/my-applications' })
   }
 
   const member = membership?.verified ? membership.member : null
+
+  if (continuity.savedApplication) {
+    return <ProgramApplicationRecovery
+      title={copy.common.savedTitle} description={copy.common.savedDescription}
+      retryLabel={copy.common.retryUploads} viewLabel={copy.common.viewApplications}
+      inProgressLabel={copy.common.uploadPending} message={message} busy={submitting}
+      onRetry={() => { void retryUploads() }} to="/programs/employment/my-applications" dir={textDir}
+    />
+  }
 
   return (
     <main className="program-apply-page min-h-screen bg-slate-50 px-3 py-6 sm:px-4 sm:py-10" dir="ltr">
@@ -306,13 +320,14 @@ function EmploymentApplyPage() {
           </div>
 
           {message ? (
-            <div className="mb-6 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
+            <div role="alert" className="mb-6 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-800">
               <AlertTriangle className="h-5 w-5 shrink-0" />
               {message}
             </div>
           ) : null}
 
-          <form onSubmit={handleSubmit} className="program-apply-form space-y-8">
+          <form onSubmit={handleSubmit} aria-busy={submitting} className="program-apply-form space-y-8">
+          <fieldset disabled={submitting} className="contents">
             <section className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
               <h2 className="text-xl font-black text-slate-950">{copy.program.verifyMembership}</h2>
               <div className="mt-4 grid gap-3 md:grid-cols-[1fr_auto]">
@@ -438,7 +453,8 @@ function EmploymentApplyPage() {
               {submitting ? <Loader2 className={`${iconBeforeClass} h-4 w-4 animate-spin`} /> : null}
               {submitting ? copy.program.submitting : copy.program.submitProfile}
             </button>
-          </form>
+          </fieldset>
+        </form>
         </div>
       </div>
     </main>

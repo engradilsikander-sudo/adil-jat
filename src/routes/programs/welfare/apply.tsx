@@ -9,7 +9,10 @@ import {
   Trash2,
   Upload,
 } from 'lucide-react'
-import { type ChangeEvent, type FormEvent, type ReactNode, useState } from 'react'
+import { type ChangeEvent, type FormEvent, type ReactNode, useRef, useState } from 'react'
+import { useProgramApplicationContinuity } from '../../../hooks/useProgramApplicationContinuity'
+import { uploadRemainingProgramDocuments, type ProgramDocumentUploadProgress } from '../../../lib/programs/upload-recovery'
+import { ProgramApplicationRecovery } from '../../../components/programs/ProgramApplicationRecovery'
 import { supabase } from '../../../lib/supabase/client'
 import { useProgramApplyCopy } from '../../../lib/program-apply-i18n'
 import {
@@ -81,8 +84,14 @@ function WelfareApplyPage() {
   const [documentFiles, setDocumentFiles] = useState<DocumentFileState>({})
   const [verifiedMember, setVerifiedMember] = useState<VerifyMembershipResult | null>(null)
   const [verifying, setVerifying] = useState(false)
-  const [submitting, setSubmitting] = useState(false)
+
   const [message, setMessage] = useState('')
+
+  const continuity = useProgramApplicationContinuity({
+    form, initialForm, files: documentFiles, leaveConfirm: copy.common.leaveConfirm,
+  })
+  const { submitting } = continuity
+  const uploadProgressRef = useRef(new Map<WelfareDocumentType, ProgramDocumentUploadProgress>())
 
   function updateField<K extends keyof WelfareFormState>(key: K, value: WelfareFormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }))
@@ -169,59 +178,31 @@ function WelfareApplyPage() {
   }
 
   async function uploadApplicationDocuments({ userId, applicationId }: { userId: string; applicationId: string }) {
-    const selectedDocuments = welfareDocumentOptions.filter((document) => documentFiles[document.type])
-
-    for (const document of selectedDocuments) {
-      const file = documentFiles[document.type]
-      if (!file) continue
-
-      const validation = validateWelfareDocumentFile(file)
-      if (!validation.ok) {
-        throw new Error(`${document.label}: ${validation.message}`)
-      }
-
-      const filePath = createWelfareDocumentStoragePath({
-        userId,
-        applicationId,
-        documentType: document.type,
-        fileName: file.name,
-      })
-
-      const { error: uploadError } = await supabase.storage
-        .from(WELFARE_DOCUMENT_BUCKET)
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          contentType: file.type || undefined,
-          upsert: false,
+    await uploadRemainingProgramDocuments({
+      options: welfareDocumentOptions, files: documentFiles, progress: uploadProgressRef.current,
+      makePath: (type, file) => createWelfareDocumentStoragePath({ userId, applicationId, documentType: type, fileName: file.name }),
+      validate: (_type, file) => { const check = validateWelfareDocumentFile(file); return check.ok ? null : check.message },
+      upload: async (_type, file, path) => {
+        const { error } = await supabase.storage.from(WELFARE_DOCUMENT_BUCKET).upload(path, file, { cacheControl: '3600', contentType: file.type || undefined, upsert: false })
+        if (error) throw new Error(error.message)
+      },
+      record: async (type, file, path) => {
+        const { error } = await supabase.from('program_documents').insert({
+          application_id: applicationId, program_key: 'welfare', uploaded_by: userId,
+          document_type: type, file_path: path, file_name: file.name,
+          mime_type: file.type || null, file_size: file.size,
+          verification_status: 'pending', is_verified: false,
         })
-
-      if (uploadError) {
-        throw new Error(`${document.label}: ${uploadError.message}`)
-      }
-
-      const { error: documentError } = await supabase.from('program_documents').insert({
-        application_id: applicationId,
-        program_key: 'welfare',
-        uploaded_by: userId,
-        document_type: document.type,
-        file_path: filePath,
-        file_name: file.name,
-        mime_type: file.type || null,
-        file_size: file.size,
-        verification_status: 'pending',
-        is_verified: false,
-      })
-
-      if (documentError) {
-        throw new Error(`${document.label}: ${documentError.message}`)
-      }
-    }
+        if (error) throw new Error(error.message)
+      },
+    })
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (!continuity.start()) return
     setMessage('')
-
+    try {
     const {
       data: { user },
       error: userError,
@@ -258,8 +239,6 @@ function WelfareApplyPage() {
       return
     }
 
-    setSubmitting(true)
-
     const details = {
       case_type: form.caseType,
       reason: form.reason.trim(),
@@ -294,25 +273,50 @@ function WelfareApplyPage() {
       .single()
 
     if (applicationError || !applicationRow?.id) {
-      setSubmitting(false)
       setMessage(applicationError?.message || 'Application submit nahi ho saki.')
       return
     }
-
-    try {
+    continuity.markSaved(applicationRow.id, user.id)
       await uploadApplicationDocuments({ userId: user.id, applicationId: applicationRow.id })
+      continuity.complete()
+      await navigate({ to: '/programs/welfare/my-applications' })
     } catch (error) {
-      setSubmitting(false)
-      setMessage(
-        error instanceof Error
-          ? `Application submit ho gayi, lekin document upload me issue aya: ${error.message}`
-          : 'Application submit ho gayi, lekin document upload me issue aya.',
-      )
-      return
+      setMessage(continuity.savedRef.current
+        ? `${copy.common.uploadProblem} ${error instanceof Error ? error.message : ''}`
+        : copy.common.unexpectedError)
+    } finally {
+      continuity.stop()
     }
+  }
 
-    setSubmitting(false)
-    await navigate({ to: '/programs/welfare/my-applications' })
+  async function retryUploads() {
+    if (!continuity.start()) return
+    setMessage('')
+    try {
+      const saved = continuity.savedRef.current
+      if (!saved) return
+      const { data: { user }, error } = await supabase.auth.getUser()
+      if (error || user?.id !== saved.userId) {
+        setMessage(copy.common.sessionChanged)
+        return
+      }
+      await uploadApplicationDocuments({ userId: saved.userId, applicationId: saved.id })
+      continuity.complete()
+      await navigate({ to: '/programs/welfare/my-applications' })
+    } catch (error) {
+      setMessage(`${copy.common.uploadProblem} ${error instanceof Error ? error.message : ''}`)
+    } finally {
+      continuity.stop()
+    }
+  }
+
+  if (continuity.savedApplication) {
+    return <ProgramApplicationRecovery
+      title={copy.common.savedTitle} description={copy.common.savedDescription}
+      retryLabel={copy.common.retryUploads} viewLabel={copy.common.viewApplications}
+      inProgressLabel={copy.common.uploadPending} message={message} busy={submitting}
+      onRetry={() => { void retryUploads() }} to="/programs/welfare/my-applications" dir={textDir}
+    />
   }
 
   return (
@@ -333,7 +337,8 @@ function WelfareApplyPage() {
       </section>
 
       <section className="px-4 py-10 md:py-16">
-        <form onSubmit={handleSubmit} className="program-apply-form mx-auto grid max-w-6xl gap-6">
+        <form onSubmit={handleSubmit} aria-busy={submitting} className="program-apply-form mx-auto grid max-w-6xl gap-6">
+          <fieldset disabled={submitting} className="contents">
           <FormCard title={copy.common.membershipVerification}>
             <p className="text-sm leading-7 text-slate-600">
               {copy.common.verifyMembershipText}
@@ -457,7 +462,7 @@ function WelfareApplyPage() {
           </FormCard>
 
           {message ? (
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-900">{message}</div>
+            <div role="alert" className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-900">{message}</div>
           ) : null}
 
           <div className="flex flex-col gap-3 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:flex-row sm:justify-between">
@@ -469,6 +474,7 @@ function WelfareApplyPage() {
               {submitting ? copy.common.submitting : copy.common.submitApplication}
             </button>
           </div>
+        </fieldset>
         </form>
       </section>
     </main>
