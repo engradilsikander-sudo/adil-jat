@@ -47,6 +47,7 @@ import {
   uniqueSorted,
 } from "../lib/shared/formatters";
 import { useAdminDashboardCopy } from "../lib/admin-dashboard-i18n";
+import { adminErrorMessage } from "../lib/admin/data-access";
 import { AdminShell } from "../components/admin/AdminShell";
 import { useI18n } from "../lib/i18n";
 import {
@@ -64,13 +65,18 @@ import {
 import { buildFullMemberCardCsv } from "../lib/admin-member-card-csv";
 import {
   buildMemberCardExportFileName,
-  buildMemberCardExportSearchFilter,
   fetchMembersForCardCsv,
-  getMemberCardExportDateStart,
   logMemberCardCsvExportAudit,
 } from "../lib/admin-member-card-export";
 import { PUBLIC_SITE_ORIGIN } from "../lib/member-card-config";
 import { fetchActiveMemberCardDesignations } from "../lib/member-card-designation";
+import {
+  ADMIN_DIRECTORY_PAGE_SIZE,
+  fetchAdminDirectoryPage,
+  fetchAdminDirectorySummary,
+  type AdminDirectoryMember,
+  type AdminDirectorySummary,
+} from "../lib/admin-member-directory";
 
 export const Route = createFileRoute("/admin")({
   component: AdminPage,
@@ -109,18 +115,7 @@ type StatusFilter = "all" | MemberStatus;
 type DateFilter = "all" | "today" | "7d" | "30d";
 type SortBy = "newest" | "oldest" | "name" | "district";
 
-type Member = {
-  id: string;
-  full_name: string;
-  cnic: string;
-  mobile: string;
-  district: string;
-  taluka: string | null;
-  photo_url: string | null;
-  status: MemberStatus;
-  member_no: string | null;
-  created_at: string;
-};
+type Member = AdminDirectoryMember;
 
 type AdminAccessResult =
   | { ok: true; userId: string; roles: AdminRoleName[] }
@@ -148,8 +143,7 @@ type AdminQuickActionConfig = {
   onClick?: () => void;
 };
 
-const ADMIN_MEMBERS_PAGE_SIZE = 50;
-const ADMIN_MEMBERS_RESTRICTED_FETCH_LIMIT = 200;
+const ADMIN_MEMBERS_PAGE_SIZE = ADMIN_DIRECTORY_PAGE_SIZE;
 const MEMBER_PHOTO_BUCKET = "member-photos";
 const MEMBER_PHOTO_SIGNED_URL_TTL_SECONDS = 60 * 60;
 
@@ -308,6 +302,7 @@ function AdminPage() {
     Record<string, string>
   >({});
   const [memberResultCount, setMemberResultCount] = useState(0);
+  const [memberSummary, setMemberSummary] = useState<AdminDirectorySummary | null>(null);
   const [memberPage, setMemberPage] = useState(0);
   const [adminRoles, setAdminRoles] = useState<AdminRoleName[]>([]);
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
@@ -322,6 +317,7 @@ function AdminPage() {
   const [areaNotice, setAreaNotice] = useState("");
   const [recentAuditLogs, setRecentAuditLogs] = useState<AuditLogRow[]>([]);
   const hasLoadedMembersRef = useRef(false);
+  const latestAdminLoadRef = useRef(0);
   const adminCopy = useAdminDashboardCopy();
   const debouncedSearch = useDebouncedValue(searchInput, 350);
 
@@ -331,6 +327,8 @@ function AdminPage() {
       options?: { silent?: boolean },
     ) => {
       const silent = options?.silent ?? false;
+      const loadId = ++latestAdminLoadRef.current;
+      const isCurrent = () => !cancelledRef?.current && loadId === latestAdminLoadRef.current;
 
       if (silent) {
         setRefreshing(true);
@@ -345,7 +343,7 @@ function AdminPage() {
         const access = await ensureAdminAccess();
 
         if (!access.ok) {
-          if (!cancelledRef?.current) {
+          if (isCurrent()) {
             await navigate({ to: access.redirectTo });
           }
 
@@ -353,14 +351,14 @@ function AdminPage() {
         }
 
         if (!canManageMembersFromRoles(access.roles)) {
-          if (!cancelledRef?.current) {
+          if (isCurrent()) {
             await navigate({ to: getPrimaryAdminRoute(access.roles) });
           }
 
           return;
         }
 
-        if (!cancelledRef?.current) {
+        if (isCurrent()) {
           setAdminRoles(access.roles);
         }
 
@@ -378,99 +376,32 @@ function AdminPage() {
           throw new Error(areaAccess.message);
         }
 
-        let membersQuery = supabase
-          .from("members")
-          .select(
-            [
-              "id",
-              "full_name",
-              "cnic",
-              "mobile",
-              "district",
-              "taluka",
-              "photo_url",
-              "status",
-              "member_no",
-              "created_at",
-            ].join(", "),
-            { count: "exact" },
-          );
+        // UX.6: PostgreSQL applies the authorized area predicate *before*
+        // aggregation, filters and range selection. Never derive dashboard
+        // totals or location options from the current page of 50 members.
+        const [summary, page] = await Promise.all([
+          fetchAdminDirectorySummary(),
+          fetchAdminDirectoryPage({
+            status: statusFilter,
+            district: districtFilter,
+            taluka: talukaFilter,
+            date: dateFilter,
+            search: debouncedSearch,
+            sort: sortBy,
+            page: memberPage,
+          }),
+        ]);
 
-        if (statusFilter !== "all") {
-          membersQuery = membersQuery.eq("status", statusFilter);
+        // Defense in depth: a mismatch between client permissions and the
+        // server's area predicate is an error, not a partial/misleading page.
+        const safeMembers = filterRowsByAreaAccess(page.rows, areaAccess);
+        if (safeMembers.length !== page.rows.length) {
+          throw new Error("Membership area scope changed. Refresh and try again.");
         }
-
-        if (districtFilter !== "all") {
-          membersQuery = membersQuery.eq("district", districtFilter);
-        }
-
-        if (talukaFilter !== "all") {
-          membersQuery = membersQuery.eq("taluka", talukaFilter);
-        }
-
-        const dateStart = getMemberCardExportDateStart(dateFilter);
-
-        if (dateStart) {
-          membersQuery = membersQuery.gte("created_at", dateStart);
-        }
-
-        const searchFilter = buildMemberCardExportSearchFilter(debouncedSearch);
-
-        if (searchFilter) {
-          membersQuery = membersQuery.or(searchFilter);
-        }
-
-        if (sortBy === "oldest") {
-          membersQuery = membersQuery.order("created_at", { ascending: true });
-        } else if (sortBy === "name") {
-          membersQuery = membersQuery
-            .order("full_name", { ascending: true })
-            .order("created_at", { ascending: false });
-        } else if (sortBy === "district") {
-          membersQuery = membersQuery
-            .order("district", { ascending: true })
-            .order("taluka", { ascending: true })
-            .order("created_at", { ascending: false });
-        } else {
-          membersQuery = membersQuery.order("created_at", { ascending: false });
-        }
-
-        membersQuery = membersQuery.order("id", { ascending: true });
 
         const pageFrom = memberPage * ADMIN_MEMBERS_PAGE_SIZE;
-        const pageTo = pageFrom + ADMIN_MEMBERS_PAGE_SIZE - 1;
-
-        const pagedMembersQuery = areaAccess.isRestricted
-          ? membersQuery.limit(
-              Math.max(
-                ADMIN_MEMBERS_PAGE_SIZE,
-                Math.min(ADMIN_MEMBERS_RESTRICTED_FETCH_LIMIT, pageTo + 1),
-              ),
-            )
-          : membersQuery.range(pageFrom, pageTo);
-
-        const {
-          data,
-          error: membersError,
-          count,
-        } = await pagedMembersQuery.returns<Member[]>();
-
-        if (membersError) throw membersError;
-
-        const safeMembers = areaAccess.isRestricted
-          ? filterRowsByAreaAccess(data ?? [], areaAccess).slice(
-              pageFrom,
-              pageTo + 1,
-            )
-          : filterRowsByAreaAccess(data ?? [], areaAccess);
-
-        const resultCount = count ?? safeMembers.length;
-
-        if (resultCount > 0 && pageFrom >= resultCount && memberPage > 0) {
-          if (!cancelledRef?.current) {
-            setMemberPage(0);
-          }
-
+        if (memberPage > 0 && pageFrom >= page.total) {
+          if (isCurrent()) setMemberPage(0);
           return;
         }
 
@@ -478,22 +409,24 @@ function AdminPage() {
           ? await fetchAuditLogs({ limit: 6 }).catch(() => [])
           : [];
 
-        if (!cancelledRef?.current) {
+        if (isCurrent()) {
           setMembers(safeMembers);
-          setMemberResultCount(resultCount);
+          setMemberResultCount(page.total);
+          setMemberSummary(summary);
           setAreaNotice(getAreaAccessSummaryText(areaAccess));
           setRecentAuditLogs(recentLogs);
         }
       } catch (err) {
-        if (!cancelledRef?.current) {
-          setError(
-            err instanceof Error
-              ? err.message
-              : "Failed to load admin members.",
-          );
+        if (isCurrent()) {
+          // Fail closed: never display stale rows or pretend that a denied
+          // summary query returned zero membership applications.
+          setMembers([]);
+          setMemberResultCount(0);
+          setMemberSummary(null);
+          setError(adminErrorMessage(err, "Failed to load admin members."));
         }
       } finally {
-        if (!cancelledRef?.current) {
+        if (isCurrent()) {
           setLoading(false);
           setRefreshing(false);
           hasLoadedMembersRef.current = true;
@@ -580,96 +513,33 @@ function AdminPage() {
     };
   }, [members]);
 
-  const stats = useMemo(() => {
-    return members.reduce(
-      (acc, member) => {
-        acc.total += 1;
-        acc[member.status] += 1;
+  const stats = memberSummary?.stats ?? {
+    total: 0,
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+    cards: 0,
+  };
 
-        if (canOpenMemberCard(member)) {
-          acc.cards += 1;
-        }
-
-        return acc;
-      },
-      {
-        total: 0,
-        pending: 0,
-        approved: 0,
-        rejected: 0,
-        cards: 0,
-      },
-    );
-  }, [members]);
-
-  const districtOptions = useMemo(() => {
-    return uniqueSorted(
-      members.map((member) => member.district).filter(Boolean),
-    );
-  }, [members]);
+  const districtOptions = useMemo(
+    () => uniqueSorted(memberSummary?.locations.map((item) => item.district) ?? []),
+    [memberSummary],
+  );
 
   const talukaOptions = useMemo(() => {
-    const source =
-      districtFilter === "all"
-        ? members
-        : members.filter((member) => member.district === districtFilter);
+    const locations = memberSummary?.locations ?? [];
+    return uniqueSorted(locations
+      .filter((item) => districtFilter === "all" || item.district === districtFilter)
+      .map((item) => item.taluka ?? "")
+      .filter(Boolean));
+  }, [districtFilter, memberSummary]);
 
-    return uniqueSorted(
-      source.map((member) => member.taluka ?? "").filter(Boolean),
-    );
-  }, [districtFilter, members]);
-
-  const filteredMembers = useMemo(() => {
-    const query = debouncedSearch.trim().toLowerCase();
-
-    const result = members.filter((member) => {
-      const matchesStatus =
-        statusFilter === "all" || member.status === statusFilter;
-
-      const matchesDistrict =
-        districtFilter === "all" || member.district === districtFilter;
-
-      const matchesTaluka =
-        talukaFilter === "all" || member.taluka === talukaFilter;
-
-      const matchesDate = matchesDateFilter(member.created_at, dateFilter);
-
-      const matchesSearch =
-        query.length === 0 || buildMemberSearchText(member).includes(query);
-
-      return (
-        matchesStatus &&
-        matchesDistrict &&
-        matchesTaluka &&
-        matchesDate &&
-        matchesSearch
-      );
-    });
-
-    return sortMembers(result, sortBy);
-  }, [
-    dateFilter,
-    districtFilter,
-    members,
-    debouncedSearch,
-    sortBy,
-    statusFilter,
-    talukaFilter,
-  ]);
-
-  const totalMemberPages = Math.max(
-    1,
-    Math.ceil(
-      (memberResultCount || filteredMembers.length) / ADMIN_MEMBERS_PAGE_SIZE,
-    ),
-  );
+  // Already filtered and deterministically sorted by the database.
+  const filteredMembers = members;
+  const totalMemberPages = Math.max(1, Math.ceil(memberResultCount / ADMIN_MEMBERS_PAGE_SIZE));
   const currentMemberPage = Math.min(memberPage + 1, totalMemberPages);
-  const pageStartNumber =
-    memberResultCount > 0 ? memberPage * ADMIN_MEMBERS_PAGE_SIZE + 1 : 0;
-  const pageEndNumber = Math.min(
-    (memberPage + 1) * ADMIN_MEMBERS_PAGE_SIZE,
-    memberResultCount || filteredMembers.length,
-  );
+  const pageStartNumber = memberResultCount > 0 ? memberPage * ADMIN_MEMBERS_PAGE_SIZE + 1 : 0;
+  const pageEndNumber = Math.min((memberPage + 1) * ADMIN_MEMBERS_PAGE_SIZE, memberResultCount);
   const canGoToPreviousMembersPage = memberPage > 0;
   const canGoToNextMembersPage = memberPage + 1 < totalMemberPages;
 
@@ -891,7 +761,7 @@ function AdminPage() {
           <div className="grid gap-3 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-5">
             <StatCard
               label={adminCopy.stats.totalMembers}
-              value={stats.total}
+              value={memberSummary ? stats.total : "—"}
               tone="slate"
               icon={<Users className="h-5 w-5" />}
               active={statusFilter === "all"}
@@ -899,7 +769,7 @@ function AdminPage() {
             />
             <StatCard
               label={adminCopy.stats.pendingReview}
-              value={stats.pending}
+              value={memberSummary ? stats.pending : "—"}
               tone="amber"
               icon={<ListChecks className="h-5 w-5" />}
               active={statusFilter === "pending"}
@@ -907,7 +777,7 @@ function AdminPage() {
             />
             <StatCard
               label={adminCopy.stats.approved}
-              value={stats.approved}
+              value={memberSummary ? stats.approved : "—"}
               tone="emerald"
               icon={<UserCheck className="h-5 w-5" />}
               active={statusFilter === "approved"}
@@ -915,7 +785,7 @@ function AdminPage() {
             />
             <StatCard
               label={adminCopy.stats.rejected}
-              value={stats.rejected}
+              value={memberSummary ? stats.rejected : "—"}
               tone="red"
               icon={<XCircle className="h-5 w-5" />}
               active={statusFilter === "rejected"}
@@ -923,7 +793,7 @@ function AdminPage() {
             />
             <StatCard
               label={adminCopy.stats.cardsIssued}
-              value={stats.cards}
+              value={memberSummary ? stats.cards : "—"}
               tone="gold"
               icon={<IdCard className="h-5 w-5" />}
               active={false}
@@ -932,11 +802,11 @@ function AdminPage() {
           </div>
         </header>
 
-        <AdminProgramShortcuts
+        {memberSummary ? <AdminProgramShortcuts
           roles={adminRoles}
           stats={stats}
           onReviewPending={() => setStatusFilter("pending")}
-        />
+        /> : null}
 
         {recentAuditLogs.length > 0 ? (
           <RecentAdminActivityCard rows={recentAuditLogs} />
@@ -968,12 +838,11 @@ function AdminPage() {
                 {adminCopy.membership.title}
               </h2>
 
-              <p className="mt-1 text-sm text-slate-500">
-                {adminCopy.membership.showing(
-                  filteredMembers.length,
-                  memberResultCount || members.length,
-                )}
-              </p>
+              {!error ? (
+                <p className="mt-1 text-sm text-slate-500">
+                  {adminCopy.membership.showing(filteredMembers.length, memberResultCount)}
+                </p>
+              ) : null}
 
               {memberResultCount > ADMIN_MEMBERS_PAGE_SIZE ? (
                 <p className="mt-1 text-xs font-medium text-slate-400">
@@ -1143,7 +1012,7 @@ function AdminPage() {
               />
             ))}
 
-            {filteredMembers.length === 0 ? (
+            {filteredMembers.length === 0 && !error ? (
               <EmptyState
                 title={adminCopy.membership.noMembers}
                 message={adminCopy.membership.noMembersMessage}
@@ -1245,7 +1114,7 @@ function AdminPage() {
                   </tr>
                 ))}
 
-                {filteredMembers.length === 0 ? (
+                {filteredMembers.length === 0 && !error ? (
                   <tr>
                     <td colSpan={9} className="p-6">
                       <EmptyState
@@ -1698,7 +1567,7 @@ function StatCard({
   onClick,
 }: {
   label: string;
-  value: number;
+  value: number | string;
   tone: "slate" | "amber" | "emerald" | "red" | "gold";
   icon: ReactNode;
   active: boolean;
@@ -2052,64 +1921,6 @@ function useDebouncedValue<T>(value: T, delayMs: number) {
   return debouncedValue;
 }
 
-function buildMemberSearchText(member: Member) {
-  return [
-    member.full_name,
-    member.cnic,
-    member.mobile,
-    member.district,
-    member.taluka ?? "",
-    member.member_no ?? "",
-    member.status,
-  ]
-    .join(" ")
-    .toLowerCase();
-}
-
 function canOpenMemberCard(member: Member) {
   return member.status === "approved" && Boolean(member.member_no);
-}
-
-function sortMembers(members: Member[], sortBy: SortBy) {
-  const copy = [...members];
-
-  switch (sortBy) {
-    case "oldest":
-      return copy.sort(
-        (a, b) =>
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-      );
-    case "name":
-      return copy.sort((a, b) => a.full_name.localeCompare(b.full_name));
-    case "district":
-      return copy.sort((a, b) => {
-        const district = a.district.localeCompare(b.district);
-        if (district !== 0) return district;
-        return a.full_name.localeCompare(b.full_name);
-      });
-    default:
-      return copy.sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      );
-  }
-}
-
-function matchesDateFilter(value: string, filter: DateFilter) {
-  if (filter === "all") return true;
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return false;
-
-  const now = new Date();
-
-  if (filter === "today") {
-    return date.toDateString() === now.toDateString();
-  }
-
-  const days = filter === "7d" ? 7 : 30;
-  const cutoff = new Date(now);
-  cutoff.setDate(now.getDate() - days);
-
-  return date >= cutoff;
 }
