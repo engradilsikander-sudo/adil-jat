@@ -12,8 +12,15 @@ const labels = {
 export function AdminShell({ children, title, subtitle }: { children: ReactNode; title?: string; subtitle?: string }) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const dialogRef = useRef<HTMLDialogElement>(null)
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const restoreFocus = useRef(true)
   const { language, direction } = useI18n()
   const copy = labels[language]
+
+  function closeMenu(options?: { navigating?: boolean }) {
+    restoreFocus.current = !options?.navigating
+    setMobileOpen(false)
+  }
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -22,12 +29,15 @@ export function AdminShell({ children, title, subtitle }: { children: ReactNode;
     const overflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const media = window.matchMedia('(min-width: 1024px)')
-    const closeOnDesktop = () => { if (media.matches) setMobileOpen(false) }
+    const closeOnDesktop = () => { if (media.matches) closeMenu({ navigating: true }) }
     media.addEventListener('change', closeOnDesktop)
     return () => {
       media.removeEventListener('change', closeOnDesktop)
       dialog.close()
       document.body.style.overflow = overflow
+      if (restoreFocus.current && menuButtonRef.current?.isConnected) {
+        menuButtonRef.current.focus()
+      }
     }
   }, [mobileOpen])
 
@@ -38,7 +48,7 @@ export function AdminShell({ children, title, subtitle }: { children: ReactNode;
         <section className="admin-shell-content">
           <div className="admin-mobile-bar">
             <div><p className="admin-mobile-eyebrow">JAS</p><h1>{title ?? copy.admin}</h1><p>{subtitle ?? copy.subtitle}</p></div>
-            <button type="button" onClick={() => setMobileOpen(true)} className="admin-mobile-menu-btn" aria-label={copy.open} aria-expanded={mobileOpen}>
+            <button ref={menuButtonRef} type="button" onClick={() => { restoreFocus.current = true; setMobileOpen(true) }} className="admin-mobile-menu-btn" aria-label={copy.open} aria-expanded={mobileOpen} aria-haspopup="dialog" aria-controls={mobileOpen ? 'jas-admin-navigation-dialog' : undefined}>
               <Menu size={20} />
             </button>
           </div>
@@ -46,14 +56,14 @@ export function AdminShell({ children, title, subtitle }: { children: ReactNode;
         </section>
       </div>
       {mobileOpen ? (
-        <dialog ref={dialogRef} className="admin-dialog" aria-labelledby="admin-navigation-title" onCancel={() => setMobileOpen(false)}>
-          <button type="button" className="admin-mobile-drawer-backdrop" onClick={() => setMobileOpen(false)} aria-label={copy.close} tabIndex={-1} />
+        <dialog id="jas-admin-navigation-dialog" ref={dialogRef} className="admin-dialog" aria-labelledby="admin-navigation-title" onCancel={() => closeMenu()}>
+          <div className="admin-mobile-drawer-backdrop" aria-hidden="true" onClick={() => closeMenu()} />
           <div className="admin-mobile-drawer-panel">
             <div className="admin-mobile-drawer-header">
               <div><p>{copy.admin}</p><h2 id="admin-navigation-title">{copy.nav}</h2></div>
-              <button type="button" onClick={() => setMobileOpen(false)} className="admin-mobile-drawer-close" aria-label={copy.close} autoFocus><X size={20} /></button>
+              <button type="button" onClick={() => closeMenu()} className="admin-mobile-drawer-close" aria-label={copy.close} autoFocus><X size={20} /></button>
             </div>
-            <div className="admin-mobile-drawer-scroll"><AdminSidebar mobile onNavigate={() => setMobileOpen(false)} /></div>
+            <div className="admin-mobile-drawer-scroll"><AdminSidebar mobile onNavigate={() => closeMenu({ navigating: true })} /></div>
           </div>
         </dialog>
       ) : null}

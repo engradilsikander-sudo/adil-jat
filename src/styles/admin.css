@@ -631,3 +631,50 @@ button.admin-quick-action {
 .admin-sidebar-item.is-disabled { flex-wrap: wrap; }
 .admin-sidebar-item.is-disabled .admin-sidebar-item-label { flex-basis: 6rem; }
 .admin-shell-content fieldset { min-width: 0; }
+
+
+/* UX.5: Keep the modal menu on the logical start edge (including Urdu/Sindhi). */
+.admin-dialog .admin-mobile-drawer-panel {
+  left: auto;
+  right: auto;
+  inset-inline-start: 0;
+  inset-inline-end: auto;
+}
+
+/* UX.5: Report tables scroll independently without widening the admin page. */
+.report-table-scroll {
+  max-width: 100%;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+}
+.report-table-scroll:focus-visible,
+.report-section-nav a:focus-visible {
+  outline: 3px solid #087f8c;
+  outline-offset: 2px;
+}
+.report-table-scroll :is(th, td):first-child {
+  position: sticky;
+  inset-inline-start: 0;
+  z-index: 1;
+  background: #fff;
+  box-shadow: 1px 0 0 #e3eaf2;
+}
+.report-table-scroll thead th:first-child {
+  z-index: 2;
+  background: #f0f4f9;
+}
+.report-table-scroll td:first-child {
+  overflow-wrap: anywhere;
+}
+.report-section-nav {
+  min-width: 0;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+.report-panel { scroll-margin-top: 6rem; min-width: 0; }
+.report-swipe-hint { display: none; }
+@media (max-width: 639px) {
+  .report-swipe-hint { display: block; }
+  .report-section-nav a { flex-shrink: 0; min-height: 44px; }
+}

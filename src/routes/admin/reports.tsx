@@ -52,6 +52,7 @@ function AdminReportsPage() {
         const canViewReports = await currentUserCanViewReports()
 
         if (!canViewReports) {
+          setData(null)
           await navigate({ to: '/admin' })
           return
         }
@@ -59,7 +60,7 @@ function AdminReportsPage() {
         const reports = await loadReportsCenterData()
         setData(reports)
       } catch (err) {
-        setData(null)
+        if (!silent) setData(null)
         setError(adminErrorMessage(err, 'Failed to load reports.'))
       } finally {
         setLoading(false)
@@ -144,10 +145,11 @@ function AdminReportsPage() {
                 type="button"
                 onClick={() => void loadData({ silent: true })}
                 disabled={refreshing}
+                aria-busy={refreshing}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-sm font-black text-slate-800 shadow-sm transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                {copy.common.refresh}
+                {refreshing ? copy.common.refreshing : copy.common.refresh}
               </button>
             </div>
           </div>
@@ -162,20 +164,35 @@ function AdminReportsPage() {
         </header>
 
         {error ? (
-          <div className="flex items-start gap-3 rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-800 ring-1 ring-red-100">
+          <div role="alert" className="flex items-start gap-3 rounded-2xl bg-red-50 p-4 text-sm font-semibold text-red-800 ring-1 ring-red-100">
             <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
-            <span>{error}</span>
+            <span>{data ? copy.page.refreshFailedStale : error}</span>
           </div>
         ) : null}
 
         {!data ? null : (
           <>
+            <nav aria-label={copy.page.sectionsLabel} className="report-section-nav flex gap-2 overflow-x-auto pb-2">
+              {[
+                ['jas-report-programs', copy.page.programApplications],
+                ['jas-report-finance', copy.page.financeSnapshot],
+                ['jas-report-districts', copy.page.districtActivity],
+                ['jas-report-months', copy.page.monthlyActivity],
+                ['jas-report-recent', copy.page.recentActivity],
+              ].map(([id, label]) => (
+                <a key={id} href={`#${id}`} className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-4 text-sm font-bold text-slate-800 no-underline shadow-sm hover:bg-slate-50">
+                  {label}
+                </a>
+              ))}
+            </nav>
             <section className="grid gap-4 xl:grid-cols-[1fr_0.9fr]">
               <Panel
-                title="Program Applications"
+                id="jas-report-programs"
+                title={copy.page.programApplications}
                 subtitle="Application workflow summary by program"
                 action={
                   <ExportButton
+                    label={copy.common.exportCsv}
                     onClick={() =>
                       downloadReportCsv(
                         `jas-program-summary-${today()}.csv`,
@@ -212,10 +229,12 @@ function AdminReportsPage() {
               </Panel>
 
               <Panel
+                id="jas-report-finance"
                 title={copy.page.financeSnapshot}
                 subtitle="Approved donations, paid expenses and available balance"
                 action={
                   <ExportButton
+                    label={copy.common.exportCsv}
                     onClick={() =>
                       downloadReportCsv(
                         `jas-finance-purpose-${today()}.csv`,
@@ -258,8 +277,9 @@ function AdminReportsPage() {
                   />
                 </div>
 
-                <div className="mt-4 overflow-x-auto rounded-2xl border border-slate-200">
+                <ReportTableScroll label={copy.page.financeTableLabel} hint={copy.page.scrollHint} className="mt-4">
                   <table className="w-full min-w-[560px] text-left text-sm">
+                    <caption className="sr-only">{copy.page.financeTableLabel}</caption>
                     <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                       <tr>
                         <th className="px-4 py-3">Purpose</th>
@@ -293,16 +313,19 @@ function AdminReportsPage() {
                       ))}
                     </tbody>
                   </table>
-                </div>
+                  {data.financeByPurpose.length === 0 ? <p className="p-4 text-sm text-slate-600">{copy.page.noFinanceRows}</p> : null}
+                </ReportTableScroll>
               </Panel>
             </section>
 
             <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
               <Panel
-                title="District Activity"
+                id="jas-report-districts"
+                title={copy.page.districtActivity}
                 subtitle="Top districts by membership and program activity"
                 action={
                   <ExportButton
+                    label={copy.common.exportCsv}
                     onClick={() =>
                       downloadReportCsv(
                         `jas-district-summary-${today()}.csv`,
@@ -327,8 +350,9 @@ function AdminReportsPage() {
                   />
                 }
               >
-                <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                <ReportTableScroll label={copy.page.districtTableLabel} hint={copy.page.scrollHint}>
                   <table className="w-full min-w-[760px] text-left text-sm">
+                    <caption className="sr-only">{copy.page.districtTableLabel}</caption>
                     <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                       <tr>
                         <th className="px-4 py-3">District</th>
@@ -365,11 +389,13 @@ function AdminReportsPage() {
                       ))}
                     </tbody>
                   </table>
-                </div>
+                  {data.districtSummaries.length === 0 ? <p className="p-4 text-sm text-slate-600">{copy.page.noDistrictRows}</p> : null}
+                </ReportTableScroll>
               </Panel>
 
-              <Panel title="Monthly Activity" subtitle="Last 6 months overview">
+              <Panel id="jas-report-months" title={copy.page.monthlyActivity} subtitle="Last 6 months overview">
                 <div className="space-y-3">
+                  {data.monthlySummaries.length === 0 ? <p className="text-sm text-slate-600">{copy.page.noMonthlyRows}</p> : null}
                   {data.monthlySummaries.map((item) => (
                     <div
                       key={item.month}
@@ -395,8 +421,9 @@ function AdminReportsPage() {
               </Panel>
             </section>
 
-            <Panel title="Recent Activity" subtitle="Latest members, applications, donations and expenses">
+            <Panel id="jas-report-recent" title={copy.page.recentActivity} subtitle="Latest members, applications, donations and expenses">
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                {data.recentActivity.length === 0 ? <p className="text-sm text-slate-600">{copy.page.noRecentRows}</p> : null}
                 {data.recentActivity.map((item) => (
                   <article
                     key={item.id}
@@ -447,18 +474,20 @@ function MetricCard({
 }
 
 function Panel({
+  id,
   title,
   subtitle,
   action,
   children,
 }: {
+  id?: string
   title: string
   subtitle: string
   action?: ReactNode
   children: ReactNode
 }) {
   return (
-    <section className="rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200/70 sm:p-5">
+    <section id={id} className="report-panel rounded-3xl bg-white p-4 shadow-sm ring-1 ring-slate-200/70 sm:p-5">
       <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h2 className="text-lg font-black text-slate-950">{title}</h2>
@@ -468,6 +497,32 @@ function Panel({
       </div>
       {children}
     </section>
+  )
+}
+
+function ReportTableScroll({
+  label,
+  hint,
+  className = '',
+  children,
+}: {
+  label: string
+  hint: string
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <div className={className}>
+      <p className="report-swipe-hint mb-2 text-xs font-semibold text-slate-600">{hint}</p>
+      <div
+        role="region"
+        aria-label={label}
+        tabIndex={0}
+        className="report-table-scroll overflow-x-auto rounded-2xl border border-slate-200"
+      >
+        {children}
+      </div>
+    </div>
   )
 }
 
@@ -545,15 +600,15 @@ function FinanceTile({
   )
 }
 
-function ExportButton({ onClick }: { onClick: () => void }) {
+function ExportButton({ onClick, label }: { onClick: () => void; label: string }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-black text-slate-700 shadow-sm transition hover:bg-slate-50"
+      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 text-xs font-black text-slate-700 shadow-sm transition hover:bg-slate-50"
     >
       <Download className="h-4 w-4" />
-      Export CSV
+      {label}
     </button>
   )
 }

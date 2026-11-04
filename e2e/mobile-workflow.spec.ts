@@ -138,5 +138,27 @@ test('admin program review controls fit and remain usable under the real mobile 
   await expect(page.locator('.admin-filter-grid')).toBeVisible()
   await expectControlsInsideViewport(page, '.admin-filter-grid')
   await expectNoHorizontalOverflow(page)
+
+  const menu = page.locator('.admin-mobile-menu-btn')
+  await menu.click()
+  await expect(menu).toHaveAttribute('aria-expanded', 'true')
+  const dialog = page.getByRole('dialog', { name: 'مینو' })
+  await expect(dialog).toBeVisible()
+  await expect(dialog.getByRole('button', { name: 'ایڈمن مینو بند کریں' })).toBeFocused()
+  // Urdu/RTL menu must dock at the right-hand edge without page-level overflow.
+  await expect.poll(() => dialog.locator('.admin-mobile-drawer-panel').evaluate(
+    panel => Math.abs(panel.getBoundingClientRect().right - window.innerWidth) <= 2,
+  )).toBe(true)
+  await page.keyboard.press('Escape')
+  await expect(dialog).toHaveCount(0)
+  await expect(menu).toBeFocused()
+  await expect(menu).toHaveAttribute('aria-expanded', 'false')
+  await expect.poll(() => page.evaluate(() => document.body.style.overflow)).not.toBe('hidden')
+
+  await menu.click()
+  await expect(dialog).toBeVisible()
+  await dialog.locator('a[href="/admin/programs/education"]').click()
+  await expect(dialog).toHaveCount(0)
+  await expectNoHorizontalOverflow(page)
   expect(errors).toEqual([])
 })
