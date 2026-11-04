@@ -1,0 +1,33 @@
+/* UX.8: in-page export preview avoids unreliable popup windows. */
+.jas-case-report-overlay {position:fixed;inset:0;z-index:120;overflow:auto;padding:12px;background:rgba(15,23,42,.86)}
+.jas-case-report-dialog {width:min(960px,100%);margin:10px auto 32px;border-radius:16px;background:#fff;color:#0f172a;overflow:hidden;box-shadow:0 18px 56px rgba(0,0,0,.35)}
+.jas-case-report-controls {position:sticky;top:0;z-index:1;padding:16px;background:#f1f5f9;border-bottom:1px solid #cbd5e1}
+.jas-case-report-controls h2 {font-weight:800;font-size:1.2rem}
+.jas-case-report-controls p {margin:8px 0;font-size:.85rem;color:#475569}
+.jas-case-report-actions {display:flex;flex-wrap:wrap;gap:10px;margin:12px 0}
+.jas-case-report-actions button {border:1px solid #334155;border-radius:10px;padding:12px 16px;font-weight:700;background:#fff;color:#0f172a}
+.jas-case-report-actions button:last-child {background:#0f172a;color:#fff}
+.jas-case-report-actions button:focus-visible {outline:3px solid #0891b2;outline-offset:3px}
+.jas-case-report-controls [role=alert] {color:#991b1b;font-weight:700}
+.jas-case-report-paper {padding:24px;font:14px/1.65 system-ui,'Segoe UI',Tahoma,sans-serif;overflow-wrap:anywhere}
+.jas-case-report-paper h1 {font-size:1.6rem;font-weight:800}
+.jas-case-report-meta {color:#475569;margin:8px 0}
+.jas-case-report-confidential {margin:18px 0;padding:12px;border:1px solid #fecaca;background:#fef2f2;color:#7f1d1d;border-radius:8px}
+.jas-case-report-paper table {border-collapse:collapse;table-layout:fixed;width:100%;margin:18px 0}
+.jas-case-report-paper th,.jas-case-report-paper td {border:1px solid #cbd5e1;padding:8px;vertical-align:top;text-align:start;white-space:pre-wrap;overflow-wrap:anywhere}
+.jas-case-report-paper th {width:36%;background:#f8fafc;font-weight:750}
+.jas-case-report-paper thead th {width:auto}
+.jas-case-report-section {margin:20px 0}
+.jas-case-report-section h2 {font-size:1.1rem;font-weight:800}
+.jas-case-report-section p {white-space:pre-wrap}
+@media print {
+ @page {margin:12mm}
+ html,body {overflow:visible!important;height:auto!important}
+ body > :not(#jas-case-report-portal) {display:none!important}
+ #jas-case-report-portal,.jas-case-report-overlay,.jas-case-report-dialog {position:static!important;display:block!important;overflow:visible!important;width:100%!important;height:auto!important;margin:0!important;padding:0!important;border:0!important;border-radius:0!important;background:white!important;box-shadow:none!important}
+ .jas-case-report-controls {display:none!important}
+ .jas-case-report-paper {padding:0!important;font-size:10pt}
+ .jas-case-report-paper tr {break-inside:avoid}
+ .jas-case-report-section {break-inside:avoid-page}
+ .jas-case-report-confidential {print-color-adjust:exact;-webkit-print-color-adjust:exact}
+}

@@ -18,11 +18,12 @@ import {
 } from 'lucide-react'
 import { type FormEvent, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../../../lib/supabase/client'
+import { CaseReportPreview } from '../../../../components/programs/CaseReportPreview'
+import { createHealthCaseReport, type CaseReportData } from '../../../../lib/programs/case-report'
 import { useAdminProgramsCopy } from '../../../../lib/admin-programs-i18n'
 import {
   HEALTH_DOCUMENT_BUCKET,
   formatHealthFileSize,
-  formatHealthMoney,
   getHealthCasePriorityClass,
   getHealthCasePriorityLabel,
   getHealthCommitteeDecisionClass,
@@ -30,13 +31,11 @@ import {
   getHealthDocumentLabel,
   getHealthDocumentStatusClass,
   getHealthDocumentStatusLabel,
-  getHealthPaymentStatusLabel,
   getHealthStatusClass,
   getHealthStatusLabel,
   healthCommitteeDecisionOptions,
   healthPaymentStatusOptions,
   isHealthEmergency,
-  sanitizeHealthReportText,
   type HealthApplicationDetails,
   type HealthDocumentRecord,
   type HealthStatus,
@@ -122,8 +121,10 @@ function AdminHealthApplicationDetailPage() {
   const [assigning, setAssigning] = useState(false)
   const [documentSavingId, setDocumentSavingId] = useState<string | null>(null)
   const [message, setMessage] = useState('')
+  const [caseReport, setCaseReport] = useState<CaseReportData | null>(null)
 
   useEffect(() => {
+    setCaseReport(null)
     void loadApplication()
   }, [id])
 
@@ -409,11 +410,11 @@ function AdminHealthApplicationDetailPage() {
               <div className="grid gap-3 sm:grid-cols-[1fr_auto]">
                 <button
                   type="button"
-                  onClick={() => printHealthCaseReport(application, details, documents)}
+                  onClick={() => setCaseReport(createHealthCaseReport(application, details, documents))}
                   className="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-5 py-3 text-sm font-black text-white transition hover:bg-white/20"
                 >
                   <Printer className="mr-2 h-4 w-4" />
-                  Print Close Report
+                  Preview / Print Report
                 </button>
 
                 <div className="rounded-2xl border border-white/10 bg-white/10 p-4 text-sm">
@@ -539,6 +540,7 @@ function AdminHealthApplicationDetailPage() {
           )}
         </div>
       </section>
+      <CaseReportPreview report={caseReport} onClose={() => setCaseReport(null)} />
     </main>
   )
 }
@@ -560,101 +562,6 @@ function PrivacyNotice() {
       </div>
     </section>
   )
-}
-
-function printHealthCaseReport(
-  application: HealthApplicationDetail,
-  details: HealthApplicationDetails,
-  documents: HealthDocumentRecord[],
-) {
-  const rows: Array<[string, string]> = [
-    ['Case No', application.application_no || application.id],
-    ['Patient Name', application.applicant_name],
-    ['Membership No', application.membership_no],
-    ['District / Taluka', `${application.district || '-'} / ${application.taluka || '-'}`],
-    ['Status', getHealthStatusLabel(application.status)],
-    ['Priority', getHealthCasePriorityLabel(details)],
-    ['Emergency', isHealthEmergency(details) ? 'Yes' : 'No'],
-    ['Disease / Condition', details.disease_name || '-'],
-    ['Treatment Type', details.treatment_type || '-'],
-    ['Hospital', details.hospital_name || '-'],
-    ['Doctor', details.doctor_name || '-'],
-    ['Estimated Cost', formatHealthMoney(details.estimated_cost)],
-    ['Required Support', formatHealthMoney(details.required_amount)],
-    ['Approved Amount', application.approved_amount ? formatHealthMoney(application.approved_amount) : 'Pending'],
-    ['Payment Status', getHealthPaymentStatusLabel(details.payment_status)],
-    ['Committee Decision', getHealthCommitteeDecisionLabel(details.health_committee_decision)],
-    ['Committee Members', details.health_committee_members || '-'],
-    ['Committee Remarks', details.health_committee_remarks || details.medical_committee_remarks || '-'],
-    ['Follow-up Notes', details.follow_up_notes || '-'],
-    ['Case Close Report', details.case_close_report || '-'],
-  ]
-
-  const documentRows = documents
-    .map(
-      (document) => `
-        <tr>
-          <td>${sanitizeHealthReportText(getHealthDocumentLabel(document.document_type))}</td>
-          <td>${sanitizeHealthReportText(getHealthDocumentStatusLabel(document.verification_status))}</td>
-          <td>${sanitizeHealthReportText(document.admin_note || '-')}</td>
-        </tr>
-      `,
-    )
-    .join('')
-
-  const html = `
-    <!doctype html>
-    <html>
-      <head>
-        <meta charset="utf-8" />
-        <title>Health Case Report - ${sanitizeHealthReportText(application.application_no || application.id)}</title>
-        <style>
-          body { font-family: Arial, sans-serif; color: #0f172a; padding: 32px; }
-          h1 { margin: 0 0 8px; }
-          .muted { color: #64748b; margin-bottom: 24px; }
-          .privacy { border: 1px solid #fecaca; background: #fef2f2; color: #7f1d1d; padding: 14px; border-radius: 12px; margin-bottom: 24px; }
-          table { width: 100%; border-collapse: collapse; margin-top: 16px; }
-          th, td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; vertical-align: top; }
-          th { background: #f8fafc; }
-          .section { margin-top: 28px; }
-          @media print { button { display: none; } body { padding: 16px; } }
-        </style>
-      </head>
-      <body>
-        <button onclick="window.print()">Print / Save PDF</button>
-        <h1>Jatt Alliance Sindh — Health Case Report</h1>
-        <div class="muted">Generated: ${sanitizeHealthReportText(new Date().toLocaleString())}</div>
-        <div class="privacy"><strong>Restricted:</strong> This report contains sensitive medical information. Share only with authorized JAS health committee/admin users.</div>
-        <table>
-          <tbody>
-            ${rows
-              .map(
-                ([label, value]) => `
-                  <tr>
-                    <th>${sanitizeHealthReportText(label)}</th>
-                    <td>${sanitizeHealthReportText(value)}</td>
-                  </tr>
-                `,
-              )
-              .join('')}
-          </tbody>
-        </table>
-        <div class="section">
-          <h2>Document Verification</h2>
-          <table>
-            <thead><tr><th>Document</th><th>Status</th><th>Admin Note</th></tr></thead>
-            <tbody>${documentRows || '<tr><td colspan="3">No documents uploaded.</td></tr>'}</tbody>
-          </table>
-        </div>
-      </body>
-    </html>
-  `
-
-  const reportWindow = window.open('', '_blank', 'noopener,noreferrer')
-  if (!reportWindow) return
-
-  reportWindow.document.write(html)
-  reportWindow.document.close()
 }
 
 function SummaryCard({

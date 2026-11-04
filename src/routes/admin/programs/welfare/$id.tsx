@@ -14,6 +14,8 @@ import {
 } from 'lucide-react'
 import { type FormEvent, useEffect, useState } from 'react'
 import { supabase } from '../../../../lib/supabase/client'
+import { CaseReportPreview } from '../../../../components/programs/CaseReportPreview'
+import { createWelfareCaseReport, type CaseReportData } from '../../../../lib/programs/case-report'
 import { useAdminProgramsCopy } from '../../../../lib/admin-programs-i18n'
 import {
   WELFARE_DOCUMENT_BUCKET,
@@ -26,10 +28,8 @@ import {
   getWelfareDocumentLabel,
   getWelfareDocumentStatusClass,
   getWelfareDocumentStatusLabel,
-  getWelfarePaymentStatusLabel,
   getWelfareStatusClass,
   getWelfareStatusLabel,
-  sanitizeWelfareReportText,
   welfareCommitteeDecisionOptions,
   welfarePaymentStatusOptions,
   type WelfareApplicationDetails,
@@ -92,6 +92,7 @@ function AdminWelfareApplicationDetailPage() {
   const [saving, setSaving] = useState(false)
   const [assigning, setAssigning] = useState(false)
   const [message, setMessage] = useState('')
+  const [caseReport, setCaseReport] = useState<CaseReportData | null>(null)
   const [form, setForm] = useState<ReviewFormState>({
     status: 'under_review',
     approvedAmount: '',
@@ -107,6 +108,7 @@ function AdminWelfareApplicationDetailPage() {
   })
 
   useEffect(() => {
+    setCaseReport(null)
     void loadApplication()
   }, [id])
 
@@ -330,52 +332,17 @@ function AdminWelfareApplicationDetailPage() {
     window.open(data.signedUrl, '_blank', 'noopener,noreferrer')
   }
 
-  function printCloseReport() {
+  function previewCloseReport() {
     if (!application) return
-    const details = application.details || {}
-    const reportHtml = `
-      <!doctype html>
-      <html>
-        <head>
-          <title>${sanitizeWelfareReportText(application.application_no || 'Welfare Case Report')}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 32px; color: #0f172a; }
-            h1 { margin: 0 0 8px; }
-            .muted { color: #64748b; }
-            .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 24px; }
-            .box { border: 1px solid #cbd5e1; border-radius: 12px; padding: 14px; }
-            .label { font-size: 11px; text-transform: uppercase; color: #64748b; font-weight: 700; }
-            .value { margin-top: 6px; font-weight: 700; }
-            .section { margin-top: 26px; }
-            pre { white-space: pre-wrap; font-family: inherit; line-height: 1.6; }
-          </style>
-        </head>
-        <body>
-          <h1>JAS ${sanitizeWelfareReportText(copy.program.detailBadge)} Close Report</h1>
-          <p class="muted">${sanitizeWelfareReportText(application.application_no || '-')}</p>
-          <div class="grid">
-            <div class="box"><div class="label">${sanitizeWelfareReportText(copy.program.applicantName)}</div><div class="value">${sanitizeWelfareReportText(application.applicant_name)}</div></div>
-            <div class="box"><div class="label">${sanitizeWelfareReportText(copy.common.membershipNo)}</div><div class="value">${sanitizeWelfareReportText(application.membership_no)}</div></div>
-            <div class="box"><div class="label">${sanitizeWelfareReportText(copy.program.caseType)}</div><div class="value">${sanitizeWelfareReportText(details.case_type)}</div></div>
-            <div class="box"><div class="label">Status</div><div class="value">${sanitizeWelfareReportText(getWelfareStatusLabel(application.status))}</div></div>
-            <div class="box"><div class="label">${sanitizeWelfareReportText(copy.common.requiredAmount)}</div><div class="value">${sanitizeWelfareReportText(formatWelfareMoney(details.required_amount))}</div></div>
-            <div class="box"><div class="label">${sanitizeWelfareReportText(copy.common.approvedAmount)}</div><div class="value">${sanitizeWelfareReportText(application.approved_amount ? formatWelfareMoney(application.approved_amount) : '-')}</div></div>
-            <div class="box"><div class="label">Fund Status</div><div class="value">${sanitizeWelfareReportText(getWelfarePaymentStatusLabel(details.payment_status))}</div></div>
-            <div class="box"><div class="label">${sanitizeWelfareReportText(copy.common.committeeDecision)}</div><div class="value">${sanitizeWelfareReportText(getWelfareCommitteeDecisionLabel(details.welfare_committee_decision))}</div></div>
-          </div>
-          <div class="section"><h2>Case Reason</h2><pre>${sanitizeWelfareReportText(details.reason)}</pre></div>
-          <div class="section"><h2>Verifier Remarks</h2><pre>${sanitizeWelfareReportText(details.verifier_remarks)}</pre></div>
-          <div class="section"><h2>Committee Remarks</h2><pre>${sanitizeWelfareReportText(details.welfare_committee_remarks)}</pre></div>
-          <div class="section"><h2>Case Close Report</h2><pre>${sanitizeWelfareReportText(details.case_close_report)}</pre></div>
-        </body>
-      </html>
-    `
-    const printWindow = window.open('', '_blank', 'noopener,noreferrer')
-    if (!printWindow) return
-    printWindow.document.write(reportHtml)
-    printWindow.document.close()
-    printWindow.focus()
-    printWindow.print()
+    setCaseReport(createWelfareCaseReport(application, application.details || {}, {
+      badge: copy.program.detailBadge,
+      applicantName: copy.program.applicantName,
+      membershipNo: copy.common.membershipNo,
+      caseType: copy.program.caseType,
+      requiredAmount: copy.common.requiredAmount,
+      approvedAmount: copy.common.approvedAmount,
+      committeeDecision: copy.common.committeeDecision,
+    }))
   }
 
   if (loading) {
@@ -459,7 +426,7 @@ function AdminWelfareApplicationDetailPage() {
               </div>
               {message ? <div className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold text-amber-900">{message}</div> : null}
               <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-end">
-                <button type="button" onClick={printCloseReport} className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 font-black text-slate-700"><Printer className="mr-2 h-4 w-4" /> Print Close Report</button>
+                <button type="button" onClick={previewCloseReport} className="inline-flex items-center justify-center rounded-xl border border-slate-300 bg-white px-5 py-3 font-black text-slate-700"><Printer className="mr-2 h-4 w-4" /> Preview / Print Report</button>
                 <button type="submit" disabled={saving} className="jas-dark-action-link inline-flex items-center justify-center rounded-xl px-6 py-3 font-black no-underline transition disabled:opacity-60">
                   {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />} {copy.common.saveReview}
                 </button>
@@ -485,6 +452,7 @@ function AdminWelfareApplicationDetailPage() {
           </aside>
         </div>
       </section>
+      <CaseReportPreview report={caseReport} onClose={() => setCaseReport(null)} />
     </main>
   )
 }
