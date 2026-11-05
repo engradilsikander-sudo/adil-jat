@@ -1,3 +1,4 @@
+import { useFinanceAccess } from '../lib/use-finance-access'
 // src/routes/admin.tsx
 import {
   createFileRoute,
@@ -1148,6 +1149,7 @@ function AdminProgramShortcuts({
   };
   onReviewPending: () => void;
 }) {
+  const { allowed: financeAllowed } = useFinanceAccess();
   const copy = useAdminDashboardCopy();
   const { language } = useI18n();
   const localCopy = adminDashboardDedupeCopy[language];
@@ -1212,7 +1214,7 @@ function AdminProgramShortcuts({
   ];
 
   const visibleQuickActions = quickActions.filter((action) =>
-    canAccessAdminModule(roles, action.key),
+    action.key === "finance" ? financeAllowed : canAccessAdminModule(roles, action.key),
   );
 
   return (
@@ -1856,7 +1858,7 @@ function canAccessAdminModule(
   if (
     moduleKey === "roles" ||
     moduleKey === "area-permissions" ||
-    moduleKey === "audit-logs"
+    moduleKey === "audit-logs" || moduleKey === "finance"
   ) {
     return false;
   }
@@ -1903,7 +1905,7 @@ function getPrimaryAdminRoute(
   if (roles.includes("health_admin")) return "/admin/programs/health";
   if (roles.includes("welfare_admin")) return "/admin/programs/welfare";
   if (roles.includes("employment_admin")) return "/admin/programs/employment";
-  if (roles.includes("finance_admin")) return "/admin/finance";
+  if (roles.includes("super_admin")) return "/admin/finance";
   return "/dashboard";
 }
 

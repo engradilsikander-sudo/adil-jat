@@ -87,7 +87,7 @@ export const areaPermissionModuleOptions: Array<{
   { value: 'health', label: 'Health', description: 'Medical assistance cases.' },
   { value: 'welfare', label: 'Welfare', description: 'Welfare case management.' },
   { value: 'employment', label: 'Employment', description: 'Job seeker and CV database.' },
-  { value: 'finance', label: 'Finance', description: 'Finance/donation records by area when linked.' },
+  { value: 'finance', label: 'Finance', description: 'Reserved for Super Admin; area grants do not authorize Finance.' },
   { value: 'reports', label: 'Reports', description: 'Area-scoped reports and summaries.' },
 ]
 
@@ -107,7 +107,7 @@ const moduleAdminRoles: Partial<Record<AreaPermissionModule, string[]>> = {
   health: ['health_admin'],
   welfare: ['welfare_admin', 'ration_admin'],
   employment: ['employment_admin'],
-  finance: ['finance_admin'],
+  finance: ['super_admin'],
   reports: [],
 }
 
@@ -219,6 +219,7 @@ export function canAccessArea(
   taluka: string | null | undefined,
   action: AreaPermissionAction = 'view',
 ) {
+  if (moduleKey === 'finance') return false
   return permissions.some((permission) => permissionMatchesArea(permission, moduleKey, district, taluka, action))
 }
 
@@ -259,6 +260,12 @@ export async function loadCurrentAdminAreaAccess(
 
       roles = ((roleRows ?? []) as Array<{ role: string }>).map((item) => item.role)
     }
+  }
+
+  if (moduleKey === 'finance') {
+    const { data, error } = await supabase.rpc('current_user_can_manage_finance')
+    if (error || data !== true) return emptyAreaAccess(moduleKey, action, 'Finance access requires Super Admin.', userId)
+    return { ok: true, message: '', userId, moduleKey, action, roles: ['super_admin'], permissions: [], isGlobalAdmin: true, isRestricted: false, summary: '' }
   }
 
   const safeRoles = roles ?? []

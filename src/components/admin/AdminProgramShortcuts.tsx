@@ -1,3 +1,4 @@
+import { useFinanceAccess } from '../../lib/use-finance-access'
 import { Link } from '@tanstack/react-router'
 import {
   ArrowRight,
@@ -100,6 +101,7 @@ export function AdminProgramShortcuts({
   roles: readonly AdminRoleName[]
   stats: MembershipStats
 }) {
+  const { allowed: financeAllowed } = useFinanceAccess()
   const cards: ModuleCardConfig[] = [
     {
       key: 'membership',
@@ -239,7 +241,7 @@ export function AdminProgramShortcuts({
     },
   ]
 
-  const visibleCards = cards.filter((card) => canAccessAdminModule(roles, card.key))
+  const visibleCards = cards.filter((card) => card.key === 'finance' ? financeAllowed : canAccessAdminModule(roles, card.key))
   const isSuperAdmin = roles.includes('super_admin')
   const accessLabel = isSuperAdmin
     ? 'Super admin control layer active'
@@ -291,7 +293,7 @@ function canAccessAdminModule(
     return true
   }
 
-  if (moduleKey === 'roles' || moduleKey === 'area-permissions' || moduleKey === 'audit-logs') {
+  if (moduleKey === 'roles' || moduleKey === 'area-permissions' || moduleKey === 'audit-logs' || moduleKey === 'finance') {
     return false
   }
 

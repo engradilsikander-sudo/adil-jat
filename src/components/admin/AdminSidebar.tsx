@@ -1,3 +1,4 @@
+import { useFinanceAccess } from '../../lib/use-finance-access'
 import { useI18n, type AppLanguage } from '../../lib/i18n'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { ChevronRight, LockKeyhole } from 'lucide-react'
@@ -25,6 +26,7 @@ export function AdminSidebar({
   mobile?: boolean
   onNavigate?: () => void
 }) {
+  const { allowed: financeAllowed } = useFinanceAccess()
   const { language } = useI18n()
   const translate = (value: string) => navLabel(value, language)
   const pathname = useRouterState({
@@ -50,7 +52,7 @@ export function AdminSidebar({
             <p className="admin-sidebar-group-title">{translate(group.title)}</p>
 
             <div className="admin-sidebar-group-items">
-              {group.items.map((item) => (
+              {group.items.filter((item) => item.to !== '/admin/finance' || financeAllowed).map((item) => (
                 <AdminSidebarItem
                   key={`${group.title}-${item.label}`}
                   item={item}

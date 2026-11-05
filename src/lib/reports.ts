@@ -59,6 +59,7 @@ export type RecentActivity = {
 }
 
 export type ReportsCenterData = {
+  financeVisible: boolean
   generatedAt: string
   metrics: ReportMetric[]
   memberStatus: Record<MemberStatus, number>
@@ -186,6 +187,7 @@ export function parseReportsCenterSummary(input: unknown): ReportsCenterData {
   })
 
   return {
+    financeVisible: data.financeVisible === true,
     generatedAt: string(data.generatedAt),
     metrics: [
       { label: 'Membership Fees Received', value: formatCurrency(feesPaid), helper: 'Verified fees, recorded separately from donations' },
@@ -193,9 +195,9 @@ export function parseReportsCenterSummary(input: unknown): ReportsCenterData {
       { label: 'Total Members', value: memberCount, helper: `${memberStatus.approved} approved members` },
       { label: 'Pending Members', value: memberStatus.pending, helper: 'Need membership review' },
       { label: 'Program Applications', value: applicationCount, helper: 'Education, health, welfare and employment' },
-      { label: 'Approved Donations', value: formatCurrency(donations), helper: `${donationCount} verified donation records` },
+      ...(data.financeVisible === true ? [{ label: 'Approved Donations', value: formatCurrency(donations), helper: `${donationCount} verified donation records` },
       { label: 'Paid Expenses', value: formatCurrency(expenses), helper: `${expenseCount} paid expense records` },
-      { label: 'Available Balance', value: formatCurrency(donations - expenses), helper: 'Approved donations minus paid expenses' },
+      { label: 'Available Balance', value: formatCurrency(donations - expenses), helper: 'Approved donations minus paid expenses' }] : []),
     ],
     memberStatus,
     programSummaries,

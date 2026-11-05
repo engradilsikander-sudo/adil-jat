@@ -121,8 +121,12 @@ export async function installSyntheticSession(page: Page, options: Options = {})
       // No Storage calls are expected: all supplied photos are null and no upload
       // scenario is exercised. Do not fabricate signed URLs or upload success.
       if (url.pathname.startsWith('/storage/v1/')) throw new Error('No Storage operation is expected')
-      // The global-admin scenario resolves roles directly. This suite currently
-      // expects zero RPCs, including permission mutations and membership submits.
+      // The Finance navigation gate performs one read-only permission RPC.
+      if (url.pathname === '/rest/v1/rpc/current_user_can_manage_finance' && method === 'POST' && query({})) {
+        expect(request.postDataJSON() ?? {}).toEqual({})
+        await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(admin) }); return
+      }
+      // All other RPCs remain unexpected.
       if (url.pathname.startsWith('/rest/v1/rpc/')) throw new Error('No RPC is expected')
       const table = url.pathname.slice('/rest/v1/'.length)
       if (method === 'GET') {

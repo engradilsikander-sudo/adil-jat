@@ -1,3 +1,4 @@
+import { useFinanceAccess } from '../../lib/use-finance-access'
 import { fetchAllRows, adminErrorMessage } from "../../lib/admin/data-access";
 import { LoadFailure } from "../../components/admin/LoadFailure";
 // src/routes/admin/finance.tsx
@@ -60,7 +61,7 @@ import {
 import { useAdminManagementCopy } from '../../lib/admin-management-i18n'
 
 export const Route = createFileRoute("/admin/finance")({
-  component: FinanceAdminPage,
+  component: FinanceAdminGate,
 });
 
 type DonationForm = {
@@ -124,6 +125,19 @@ const initialExpenseForm: ExpenseForm = {
 const statusFilterOptions = ["all", "pending", "approved", "rejected", "paid"];
 const monthFilterOptions = ["all", "this_month", "last_month", "this_year"];
 
+function FinanceAdminGate() {
+  const [retry, setRetry] = useState(0)
+  return <FinanceAuthorizedPage key={retry} retry={() => setRetry((value) => value + 1)} />
+}
+
+function FinanceAuthorizedPage({ retry }: { retry: () => void }) {
+  const access = useFinanceAccess()
+  const { copy } = useAdminManagementCopy('finance')
+  if (access.checking) return <AdminShell title={copy.page.title}><p role="status">{copy.common.loading}</p></AdminShell>
+  if (!access.allowed) return <AdminShell title={copy.page.title}><div role="alert" className="p-6">{copy.common.financeAccessDenied}<button type="button" onClick={retry} className="ml-3 min-h-11 rounded-lg border px-4">{copy.common.retry}</button></div></AdminShell>
+  return <FinanceAdminPage key={`${access.userId}:${access.revision}`} />
+}
+
 function FinanceAdminPage() {
   const { copy } = useAdminManagementCopy('finance')
   const [donations, setDonations] = useState<FinanceDonation[]>([]);
@@ -155,6 +169,9 @@ function FinanceAdminPage() {
   }, []);
 
   async function loadFinanceData() {
+    setDonations([]);
+    setExpenses([]);
+    setAuditLogs([]);
     setLoading(true);
     setLoadError("");
     try {
@@ -175,7 +192,7 @@ function FinanceAdminPage() {
 
 
     const areaAccess = await loadCurrentAdminAreaAccess("finance", "view", {
-      requiredRoles: ["admin", "super_admin", "finance_admin"],
+      requiredRoles: ["super_admin"],
     });
 
     if (!areaAccess.ok) {
@@ -720,8 +737,8 @@ function FinanceAdminPage() {
                   Finance privacy and audit warning
                 </h2>
                 <p className="mt-1 text-sm leading-6">
-                  Ye module sensitive hai. Sirf finance/admin roles ko access
-                  den. Approved ya paid records edit karne ke bajaye new
+                  Ye module sensitive hai. Finance management sirf Super Admin
+                  ke liye hai. Approved ya paid records edit karne ke bajaye new
                   correction entry aur audit note rakhen.
                 </p>
               </div>
@@ -1688,13 +1705,13 @@ async function ensureFinanceAdminAccess(): Promise<AccessState> {
     .from("user_roles")
     .select("role")
     .eq("user_id", user.id)
-    .in("role", ["admin", "super_admin", "finance_admin"]);
+    .in("role", ["super_admin"]);
 
   if (error || !data?.length) {
     return {
       ok: false,
       message:
-        "Finance module sirf admin, super admin ya finance admin ke liye allowed hai.",
+        "Finance module sirf Super Admin ke liye allowed hai.",
     };
   }
 

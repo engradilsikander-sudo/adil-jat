@@ -182,12 +182,12 @@ export function getAdminAccountItems(labels: {
   programs: string
   donations: string
   reports: string
-}) {
+}, financeAllowed = false) {
   return [
     { to: '/admin', label: labels.adminPanel, icon: <ShieldCheck size={16} /> },
     { to: '/admin', label: labels.members, icon: <IdCard size={16} /> },
     { to: '/admin/programs/education', label: labels.programs, icon: <GraduationCap size={16} /> },
-    { to: '/admin/finance', label: labels.donations, icon: <HandHeart size={16} /> },
+    ...(financeAllowed ? [{ to: '/admin/finance' as const, label: labels.donations, icon: <HandHeart size={16} /> }] : []),
     { to: '/admin/reports', label: labels.reports, icon: <FileText size={16} /> },
   ] satisfies NavItem[]
 }

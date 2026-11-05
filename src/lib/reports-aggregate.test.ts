@@ -12,6 +12,7 @@ vi.mock('./area-permissions', () => ({
 import { loadReportsCenterData, parseReportsCenterSummary } from './reports'
 
 const summary = {
+  financeVisible: true,
   generatedAt: '2026-11-04T10:00:00Z',
   period: 'all',
   totals: {

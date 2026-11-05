@@ -1,3 +1,4 @@
+import { useFinanceAccess } from '../../lib/use-finance-access'
 import { adminErrorMessage } from '../../lib/admin/data-access'
 // src/routes/admin/reports.tsx
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router'
@@ -29,8 +30,15 @@ import {
 import { useAdminManagementCopy } from '../../lib/admin-management-i18n'
 
 export const Route = createFileRoute('/admin/reports')({
-  component: AdminReportsPage,
+  component: ReportsAuthorizationGate,
 })
+
+function ReportsAuthorizationGate() {
+  const { copy } = useAdminManagementCopy('reports')
+  const access = useFinanceAccess()
+  if (access.checking) return <AdminShell title="Reports"><p role="status">{copy.common.loading}</p></AdminShell>
+  return <AdminReportsPage key={`${access.userId}:${access.allowed}:${access.revision}`} />
+}
 
 function AdminReportsPage() {
   const { copy } = useAdminManagementCopy('reports')
@@ -61,7 +69,7 @@ function AdminReportsPage() {
         if (requestId === latestRequest.current) setData(reports)
       } catch (err) {
         if (requestId !== latestRequest.current) return
-        if (!silent) setData(null)
+        setData(null)
         setError(adminErrorMessage(err, 'Failed to load reports.'))
       } finally {
         if (requestId === latestRequest.current) {
@@ -209,7 +217,7 @@ function AdminReportsPage() {
             <nav aria-label={copy.page.sectionsLabel} className="report-section-nav flex gap-2 overflow-x-auto pb-2">
               {[
                 ['jas-report-programs', copy.page.programApplications],
-                ['jas-report-finance', copy.page.financeSnapshot],
+                ...(data.financeVisible ? [['jas-report-finance', copy.page.financeSnapshot]] : []),
                 ['jas-report-districts', copy.page.districtActivity],
                 ['jas-report-months', copy.page.monthlyActivity],
                 ['jas-report-recent', copy.page.recentActivity],
@@ -262,7 +270,7 @@ function AdminReportsPage() {
                 </div>
               </Panel>
 
-              <Panel
+              {data.financeVisible ? <Panel
                 id="jas-report-finance"
                 title={copy.page.financeSnapshot}
                 subtitle="Approved donations, paid expenses and available balance"
@@ -349,7 +357,7 @@ function AdminReportsPage() {
                   </table>
                   {data.financeByPurpose.length === 0 ? <p className="p-4 text-sm text-slate-600">{copy.page.noFinanceRows}</p> : null}
                 </ReportTableScroll>
-              </Panel>
+              </Panel> : null}
             </section>
 
             <section className="grid gap-4 xl:grid-cols-[1.1fr_0.9fr]">
@@ -368,16 +376,14 @@ function AdminReportsPage() {
                           'Members',
                           'Approved Members',
                           'Program Applications',
-                          'Approved Donations',
-                          'Paid Expenses',
+                          ...(data.financeVisible ? ['Approved Donations', 'Paid Expenses'] : []),
                         ],
                         data.districtSummaries.map((item) => [
                           item.district,
                           item.members,
                           item.approvedMembers,
                           item.programApplications,
-                          item.approvedDonations,
-                          item.paidExpenses,
+                          ...(data.financeVisible ? [item.approvedDonations, item.paidExpenses] : []),
                         ]),
                       )
                     }
@@ -385,7 +391,7 @@ function AdminReportsPage() {
                 }
               >
                 <ReportTableScroll label={copy.page.districtTableLabel} hint={copy.page.scrollHint}>
-                  <table className="w-full min-w-[760px] text-left text-sm">
+                  <table className={`w-full ${data.financeVisible ? 'min-w-[760px]' : 'min-w-[520px]'} text-left text-sm`}>
                     <caption className="sr-only">{copy.page.districtTableLabel}</caption>
                     <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
                       <tr>
@@ -393,8 +399,8 @@ function AdminReportsPage() {
                         <th className="px-4 py-3">Members</th>
                         <th className="px-4 py-3">Approved</th>
                         <th className="px-4 py-3">Applications</th>
-                        <th className="px-4 py-3">Donations</th>
-                        <th className="px-4 py-3">Expenses</th>
+                        {data.financeVisible ? <th className="px-4 py-3">Donations</th> : null}
+                        {data.financeVisible ? <th className="px-4 py-3">Expenses</th> : null}
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
@@ -413,12 +419,12 @@ function AdminReportsPage() {
                           <td className="px-4 py-3 text-slate-700">
                             {item.programApplications}
                           </td>
-                          <td className="px-4 py-3 text-emerald-800">
+                          {data.financeVisible ? <td className="px-4 py-3 text-emerald-800">
                             {formatCurrency(item.approvedDonations)}
-                          </td>
-                          <td className="px-4 py-3 text-amber-800">
+                          </td> : null}
+                          {data.financeVisible ? <td className="px-4 py-3 text-amber-800">
                             {formatCurrency(item.paidExpenses)}
-                          </td>
+                          </td> : null}
                         </tr>
                       ))}
                     </tbody>
@@ -441,21 +447,21 @@ function AdminReportsPage() {
                           {item.members} members · {item.applications} applications
                         </p>
                       </div>
-                      <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-bold text-slate-600">
+                      {data.financeVisible ? <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-bold text-slate-600">
                         <span className="rounded-xl bg-white px-3 py-2 ring-1 ring-slate-100">
                           Donations: {formatCurrency(item.donations)}
                         </span>
                         <span className="rounded-xl bg-white px-3 py-2 ring-1 ring-slate-100">
                           Expenses: {formatCurrency(item.expenses)}
                         </span>
-                      </div>
+                      </div> : null}
                     </div>
                   ))}
                 </div>
               </Panel>
             </section>
 
-            <Panel id="jas-report-recent" title={copy.page.recentActivity} subtitle="Latest members, applications, donations and expenses">
+            <Panel id="jas-report-recent" title={copy.page.recentActivity} subtitle={data.financeVisible ? 'Latest members, applications, donations and expenses' : 'Latest members and applications'}>
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
                 {data.recentActivity.length === 0 ? <p className="text-sm text-slate-600">{copy.page.noRecentRows}</p> : null}
                 {data.recentActivity.map((item) => (

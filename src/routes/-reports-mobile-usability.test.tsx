@@ -1,3 +1,4 @@
+vi.mock('../lib/use-finance-access', () => ({ useFinanceAccess: () => ({ checking: false, allowed: true, userId: 'test-admin', revision: 0 }) }))
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
@@ -30,6 +31,7 @@ vi.mock('../lib/reports', () => ({
 import { Route } from './admin/reports'
 
 const report = {
+  financeVisible: true,
   generatedAt: '2026-11-03T00:00:00Z',
   metrics: [{ label: 'Members', value: 12, helper: 'Count' }],
   memberStatus: { pending: 1, approved: 11, rejected: 0 },
@@ -97,14 +99,15 @@ it('provides visible empty states instead of blank report sections', async () =>
   expect(screen.getByText('No recent activity to display.')).toBeTruthy()
 })
 
-it('preserves an already loaded report when an optional refresh fails', async () => {
+it('clears privileged report data when a refresh fails', async () => {
   state.load.mockResolvedValueOnce(report).mockRejectedValueOnce(new Error('Offline'))
   mount()
   await screen.findByText('Education and vocational training for families')
   fireEvent.click(screen.getByRole('button', { name: 'Refresh' }))
   await screen.findByRole('alert')
-  expect(screen.getByRole('alert').textContent).toContain('Refresh failed. Showing the previously loaded report.')
-  expect(screen.getByText('Education and vocational training for families')).toBeTruthy()
+  expect(screen.getByRole('alert').textContent).toContain('Offline')
+  expect(screen.queryByText('Education and vocational training for families')).toBeNull()
+  expect(screen.queryAllByRole('button', { name: 'Export CSV' })).toHaveLength(0)
   await waitFor(() => expect((screen.getByRole('button', { name: 'Refresh' }) as HTMLButtonElement).disabled).toBe(false))
 })
 
@@ -143,6 +146,30 @@ it('never exposes a stale period export after the new-period request fails', asy
   await screen.findByRole('alert')
   expect(screen.queryAllByRole('button', { name: 'Export CSV' })).toHaveLength(0)
   expect(screen.queryByText('Education and vocational training for families')).toBeNull()
+})
+
+it('omits finance-only columns, monthly chips and CSV fields for non-super reports viewers', async () => {
+  state.load.mockResolvedValueOnce({
+    ...report,
+    financeVisible: false,
+    financeByPurpose: [],
+    districtSummaries: [{ ...report.districtSummaries[0], approvedDonations: 0, paidExpenses: 0 }],
+    monthlySummaries: [{ month: '2026-11', members: 4, applications: 2, donations: 0, expenses: 0 }],
+  })
+  mount()
+  const region = await screen.findByRole('region', { name: 'District activity table' })
+  expect([...region.querySelectorAll('th')].map((th) => th.textContent)).toEqual([
+    'District', 'Members', 'Approved', 'Applications',
+  ])
+  expect(screen.queryByText('Finance by purpose')).toBeNull()
+  expect(screen.queryByText('Donations: Rs 0')).toBeNull()
+  expect(screen.queryByText('Expenses: Rs 0')).toBeNull()
+  fireEvent.click(screen.getAllByRole('button', { name: 'Export CSV' })[1])
+  expect(state.download).toHaveBeenCalledWith(
+    expect.stringMatching(/^jas-district-summary-.*\.csv$/),
+    ['District', 'Members', 'Approved Members', 'Program Applications'],
+    [['Umerkot', 12, 11, 3]],
+  )
 })
 
 it('offers Urdu period labels in the existing report interface', async () => {

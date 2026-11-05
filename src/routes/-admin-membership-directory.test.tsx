@@ -1,3 +1,4 @@
+vi.mock('../lib/use-finance-access', () => ({ useFinanceAccess: () => ({ checking: false, allowed: true, userId: 'admin-1', revision: 0 }) }))
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
