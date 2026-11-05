@@ -10,6 +10,7 @@ import type { ReactNode } from 'react'
 import { Header } from '../components/layout/Header'
 import { NotFoundPage } from '../components/layout/NotFoundPage'
 import { PwaBootstrap } from '../components/layout/PwaBootstrap'
+import { ConnectionNotice } from '../components/layout/ConnectionNotice'
 import { AppUpdateReset } from '../components/pwa/AppUpdateReset'
 import { I18nProvider } from '../lib/i18n'
 import appCss from '../styles.css?url'
@@ -72,6 +73,7 @@ function RootComponent() {
       <div className="jas-app">
 
         <PwaBootstrap />
+        <ConnectionNotice />
         <AppUpdateReset />
         {!isPublicVerifyPage && !isLandingPage ? <Header compact={isCardPreviewPage} /> : null}
 

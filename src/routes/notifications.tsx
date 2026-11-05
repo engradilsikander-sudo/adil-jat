@@ -8,7 +8,7 @@ import {
   RefreshCw,
   Settings,
 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   getSafeNotificationActionUrl,
   getNotificationTone,
@@ -17,6 +17,8 @@ import {
 import { useI18n, type AppLanguage } from '../lib/i18n'
 import { mobileUxCopy, type MobileUxCopy } from '../lib/i18n/mobile-ux-copy'
 import { supabase } from '../lib/supabase/client'
+import { isTransportFailure, networkFailureMessage, retryTransportRead } from '../lib/network-recovery'
+import { networkRecoveryCopy } from '../lib/i18n/network-recovery-copy'
 
 export const Route = createFileRoute('/notifications')({
   component: NotificationsPage,
@@ -28,6 +30,7 @@ function NotificationsPage() {
   const navigate = useNavigate()
   const { language, direction } = useI18n()
   const text = mobileUxCopy[language].notifications
+  const networkText = networkRecoveryCopy[language]
   const [items, setItems] = useState<UserNotification[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
@@ -36,12 +39,22 @@ function NotificationsPage() {
   const [message, setMessage] = useState('')
   const [totalCount, setTotalCount] = useState(0)
   const [hasMore, setHasMore] = useState(false)
+  const latestRead = useRef(0)
+  const activeRead = useRef<AbortController | null>(null)
 
   useEffect(() => {
     void loadNotifications()
+    return () => {
+      latestRead.current += 1
+      activeRead.current?.abort()
+    }
   }, [])
 
   async function loadNotifications(options?: { silent?: boolean; append?: boolean }) {
+    const requestId = ++latestRead.current
+    activeRead.current?.abort()
+    const controller = new AbortController()
+    activeRead.current = controller
     const silent = options?.silent ?? false
     const append = options?.append ?? false
     const from = append ? items.length : 0
@@ -50,118 +63,113 @@ function NotificationsPage() {
     if (append) setLoadingMore(true)
     else if (silent) setRefreshing(true)
     else setLoading(true)
-
     setMessage('')
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser()
-
-    if (userError || !user) {
-      await navigate({ to: '/login', replace: true })
-      return
-    }
-
-    const { data, error, count } = await supabase
-      .from('notifications')
-      .select(
-        'id, user_id, title, message, category, related_type, related_id, action_url, is_read, read_at, created_at',
-        { count: 'exact' },
-      )
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .range(from, to)
-
-    if (error) {
-      setMessage(error.message)
-      if (!append) setItems([])
-      setLoading(false)
-      setRefreshing(false)
-      setLoadingMore(false)
-      return
-    }
-
-    const nextItems = (data || []) as UserNotification[]
-    const nextCount = count ?? (append ? items.length + nextItems.length : nextItems.length)
-    const mergedItems = append ? [...items, ...nextItems] : nextItems
-    const unreadIds = nextItems
-      .filter((item) => !item.is_read)
-      .map((item) => item.id)
-
-    setItems(mergedItems)
-    setTotalCount(nextCount)
-    setHasMore(mergedItems.length < nextCount)
-    setLoading(false)
-    setRefreshing(false)
-    setLoadingMore(false)
-
-    if (unreadIds.length > 0) {
-      const readAt = new Date().toISOString()
-      const { error: readError } = await supabase
-        .from('notifications')
-        .update({ is_read: true, read_at: readAt })
-        .eq('user_id', user.id)
-        .eq('is_read', false)
-        .in('id', unreadIds)
-
-      if (readError) {
-        setMessage(readError.message)
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (requestId !== latestRead.current) return
+      // Losing access to the network is not evidence of an expired session.
+      if (userError && isTransportFailure(userError)) throw userError
+      if (userError || !user) {
+        await navigate({ to: '/login', replace: true })
         return
       }
 
-      const unreadIdSet = new Set(unreadIds)
-      setItems((current) =>
-        current.map((item) =>
-          unreadIdSet.has(item.id)
-            ? {
-                ...item,
-                is_read: true,
-                read_at: item.read_at || readAt,
-              }
-            : item,
-        ),
-      )
-      window.dispatchEvent(new CustomEvent('jas-notifications-updated'))
+      // Retry the *read-only* GET once on a transport failure. Updates that mark
+      // notifications read and Mark All Read are NEVER automatically retried.
+      const { data, count } = await retryTransportRead(async () => {
+        const result = await supabase
+          .from('notifications')
+          .select(
+            'id, user_id, title, message, category, related_type, related_id, action_url, is_read, read_at, created_at',
+            { count: 'exact' },
+          )
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .range(from, to)
+        if (result.error) throw result.error
+        return result
+      }, { signal: controller.signal })
+      if (requestId !== latestRead.current) return
+
+      const nextItems = (data || []) as UserNotification[]
+      const nextCount = count ?? (append ? items.length + nextItems.length : nextItems.length)
+      const mergedItems = append ? [...items, ...nextItems] : nextItems
+      const unreadIds = nextItems.filter((item) => !item.is_read).map((item) => item.id)
+
+      setItems(mergedItems)
+      setTotalCount(nextCount)
+      setHasMore(mergedItems.length < nextCount)
+
+      if (unreadIds.length > 0) {
+        const readAt = new Date().toISOString()
+        const { error: readError } = await supabase
+          .from('notifications')
+          .update({ is_read: true, read_at: readAt })
+          .eq('user_id', user.id)
+          .eq('is_read', false)
+          .in('id', unreadIds)
+
+        if (requestId !== latestRead.current) return
+        if (readError) {
+          setMessage(networkFailureMessage(readError, networkText.readFailed))
+          return
+        }
+        const unreadIdSet = new Set(unreadIds)
+        setItems((current) => current.map((item) =>
+          unreadIdSet.has(item.id) ? { ...item, is_read: true, read_at: item.read_at || readAt } : item,
+        ))
+        window.dispatchEvent(new CustomEvent('jas-notifications-updated'))
+      }
+    } catch (error) {
+      if (requestId !== latestRead.current) return
+      // Retain the last successful list/counts for refresh and pagination errors.
+      // Only an initial read starts from an empty state.
+      setMessage(networkFailureMessage(error, networkText.readFailed))
+    } finally {
+      if (requestId === latestRead.current) {
+        setLoading(false)
+        setRefreshing(false)
+        setLoadingMore(false)
+        if (activeRead.current === controller) activeRead.current = null
+      }
     }
   }
 
   async function markAllRead() {
     setMarkingAllRead(true)
     setMessage('')
+    try {
+      const { data: { user }, error: userError } = await supabase.auth.getUser()
+      if (userError || !user) {
+        setMessage(networkFailureMessage(userError, networkText.readFailed))
+        return
+      }
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser()
+      const readAt = new Date().toISOString()
+      const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: true, read_at: readAt })
+        .eq('user_id', user.id)
+        .eq('is_read', false)
 
-    if (userError || !user) {
-      setMarkingAllRead(false)
-      return
-    }
-
-    const readAt = new Date().toISOString()
-    const { error } = await supabase
-      .from('notifications')
-      .update({ is_read: true, read_at: readAt })
-      .eq('user_id', user.id)
-      .eq('is_read', false)
-
-    if (error) {
-      setMessage(error.message)
-      setMarkingAllRead(false)
-      return
-    }
-
-    setItems((current) =>
-      current.map((item) => ({
+      // Never automatically repeat this write after a timeout: the first request
+      // may already have succeeded on the server even if its response was lost.
+      if (error) {
+        setMessage(networkFailureMessage(error, networkText.readFailed))
+        return
+      }
+      setItems((current) => current.map((item) => ({
         ...item,
         is_read: true,
         read_at: item.read_at || readAt,
-      })),
-    )
-    setMarkingAllRead(false)
-    window.dispatchEvent(new CustomEvent('jas-notifications-updated'))
+      })))
+      window.dispatchEvent(new CustomEvent('jas-notifications-updated'))
+    } catch (error) {
+      setMessage(networkFailureMessage(error, networkText.readFailed))
+    } finally {
+      setMarkingAllRead(false)
+    }
   }
 
   const unreadCount = useMemo(
@@ -245,9 +253,14 @@ function NotificationsPage() {
         </section>
 
         {message ? (
-          <div className="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
+          <div role="alert" className="flex flex-wrap items-start gap-3 rounded-2xl border border-red-200 bg-red-50 p-4 text-sm font-bold text-red-700">
             <AlertTriangle className="mt-0.5 h-5 w-5" />
-            <span>{message}</span>
+            <span className="min-w-0 flex-1">{message}</span>
+            {!items.length ? (
+              <button type="button" onClick={() => void loadNotifications()} className="min-h-11 rounded-xl border border-red-300 bg-white px-4 text-sm font-bold text-red-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2" aria-label={networkText.tryAgain}>
+                {networkText.tryAgain}
+              </button>
+            ) : null}
           </div>
         ) : null}
 
