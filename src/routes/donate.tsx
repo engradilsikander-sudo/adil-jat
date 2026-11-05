@@ -1,7 +1,6 @@
 // src/routes/donate.tsx
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-  AlertTriangle,
   BadgeIndianRupee,
   CheckCircle2,
   FileText,
@@ -11,12 +10,12 @@ import {
   Upload,
 } from "lucide-react";
 import { type ChangeEvent, type FormEvent, useEffect, useState } from "react";
+import { submitDonationAction } from "../lib/donation-action";
+import { DonationSecurityCheck } from "../components/DonationSecurityCheck";
 import { supabase } from "../lib/supabase/client";
 import {
-  DONATION_DOCUMENT_BUCKET,
   DONATION_RECEIPT_ACCEPT,
   buildDonationReferenceHint,
-  createDonationReceiptStoragePath,
   donationPaymentMethodOptions,
   donationPurposeOptions,
   formatDonationMoney,
@@ -33,6 +32,8 @@ export const Route = createFileRoute("/donate")({
 });
 
 type DonationFormState = {
+  donorName: string;
+  contact: string;
   amount: string;
   purpose: DonationPurpose;
   paymentMethod: DonationPaymentMethod;
@@ -41,6 +42,8 @@ type DonationFormState = {
 };
 
 const initialForm: DonationFormState = {
+  donorName: "",
+  contact: "",
   amount: "",
   purpose: "general_fund",
   paymentMethod: "bank",
@@ -52,17 +55,24 @@ function DonatePage() {
   const [member, setMember] = useState<ApprovedMemberForDonation | null>(null);
   const [form, setForm] = useState<DonationFormState>(initialForm);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
-  const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [success, setSuccess] = useState("");
+  const [idempotencyKey, setIdempotencyKey] = useState("");
+  const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaRevision, setCaptchaRevision] = useState(0);
+  const [website, setWebsite] = useState("");
 
   useEffect(() => {
+    const key = sessionStorage.getItem("jas-donation-key") || crypto.randomUUID();
+    sessionStorage.setItem("jas-donation-key", key);
+    setIdempotencyKey(key);
+    const draft = sessionStorage.getItem("jas-donation-draft");
+    if (draft) { try { setForm({ ...initialForm, ...JSON.parse(draft) }); } catch { /* Ignore invalid local draft. */ } }
     void loadApprovedMember();
   }, []);
 
   async function loadApprovedMember() {
-    setLoading(true);
     setMessage("");
 
     const {
@@ -71,9 +81,7 @@ function DonatePage() {
     } = await supabase.auth.getUser();
 
     if (userError || !user) {
-      setMessage("Donation submit karne ke liye pehle login karen.");
       setMember(null);
-      setLoading(false);
       return;
     }
 
@@ -87,23 +95,17 @@ function DonatePage() {
       .returns<ApprovedMemberForDonation | null>();
 
     if (error) {
-      setMessage(error.message);
       setMember(null);
-      setLoading(false);
       return;
     }
 
     if (!data || data.status !== "approved" || !data.member_no) {
-      setMessage(
-        "Donation form sirf approved JAS members ke liye available hai.",
-      );
       setMember(null);
-      setLoading(false);
       return;
     }
 
     setMember(data);
-    setLoading(false);
+    if (!sessionStorage.getItem("jas-donation-draft")) setForm(current => ({ ...current, donorName: data.full_name, contact: data.mobile }));
   }
 
   function handleReceipt(event: ChangeEvent<HTMLInputElement>) {
@@ -112,11 +114,7 @@ function DonatePage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    if (!member) {
-      setMessage("Approved member record load nahi hua.");
-      return;
-    }
+    if (saving) return;
 
     const amount = Number(form.amount);
     if (!Number.isFinite(amount) || amount <= 0) {
@@ -133,90 +131,35 @@ function DonatePage() {
     setMessage("");
     setSuccess("");
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      setMessage("Session expire ho gaya. Dobara login karen.");
-      setSaving(false);
-      return;
-    }
-
-    let receiptPath: string | null = null;
-
-    if (receiptFile) {
-      const fileError = validateDonationReceiptFile(receiptFile);
-      if (fileError) {
-        setMessage(fileError);
-        setSaving(false);
-        return;
+    sessionStorage.setItem("jas-donation-draft", JSON.stringify(form));
+    try {
+      if (receiptFile) {
+        const fileError = validateDonationReceiptFile(receiptFile);
+        if (fileError) throw new Error(fileError);
       }
-
-      receiptPath = createDonationReceiptStoragePath({
-        userId: user.id,
-        folder: "donations",
-        fileName: receiptFile.name,
-      });
-
-      const { error: uploadError } = await supabase.storage
-        .from(DONATION_DOCUMENT_BUCKET)
-        .upload(receiptPath, receiptFile, {
-          cacheControl: "3600",
-          upsert: false,
-          contentType: receiptFile.type,
-        });
-
-      if (uploadError) {
-        setMessage(uploadError.message);
-        setSaving(false);
-        return;
-      }
-    }
-
-    const payload = {
-      donor_user_id: user.id,
-      donor_member_id: member.id,
-      donor_member_no_snapshot: member.member_no,
-      donor_name_snapshot: member.full_name,
-      donor_father_name_snapshot: member.father_name,
-      donor_district_snapshot: member.district,
-      donor_taluka_snapshot: member.taluka,
-      donor_name: member.full_name,
-      donor_phone: member.mobile,
-      amount,
-      payment_method: form.paymentMethod,
-      purpose: form.purpose,
-      district: member.district,
-      taluka: member.taluka,
-      transaction_reference: form.transactionReference.trim(),
-      receipt_file_path: receiptPath,
-      notes: form.notes.trim() || null,
-      status: "pending",
-      created_by: user.id,
-    };
-
-    const { data, error } = await supabase
-      .from("finance_donations")
-      .insert(payload as never)
-      .select("donation_no")
-      .single();
-
-    if (error) {
-      setMessage(error.message);
+      const { data: { session } } = await supabase.auth.getSession();
+      const payload = new FormData();
+      for (const [key, value] of Object.entries(form)) payload.set(key, value);
+      payload.set("idempotencyKey", idempotencyKey);
+      payload.set("accessToken", session?.access_token || "");
+      payload.set("captchaToken", captchaToken);
+      payload.set("website", website);
+      if (receiptFile) payload.set("receipt", receiptFile);
+      const result = await submitDonationAction({ data: payload });
+      setSuccess(`Donation reference: ${result.donationNo}. Pending verification — this is not confirmation of payment.`);
+      setForm(initialForm);
+      setReceiptFile(null);
+      sessionStorage.removeItem("jas-donation-draft");
+      const nextKey = crypto.randomUUID();
+      sessionStorage.setItem("jas-donation-key", nextKey);
+      setIdempotencyKey(nextKey);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Response interrupted. Retry with the same details; your submission will not be duplicated.");
+    } finally {
       setSaving(false);
-      return;
+      setCaptchaToken("");
+      setCaptchaRevision(value => value + 1);
     }
-
-    setForm(initialForm);
-    setReceiptFile(null);
-    setSuccess(
-      `Donation submitted. Finance admin verification ke baad leaderboard mein count hogi. Donation ID: ${String(
-        data?.donation_no || "Pending",
-      )}`,
-    );
-    setSaving(false);
   }
 
   return (
@@ -235,8 +178,7 @@ function DonatePage() {
               </h1>
               <p className="mt-4 max-w-3xl text-lg leading-8 text-white/70">
                 Education, health, welfare aur general fund ke liye donation
-                submit karen. Finance admin verification ke baad donation member
-                leaderboard mein show hogi.
+                submit karen. Anyone can submit, with or without membership. Every donation remains pending until manually verified.
               </p>
             </div>
 
@@ -270,8 +212,7 @@ function DonatePage() {
                   </h2>
                   <p className="mt-2 text-sm leading-6 text-slate-600">
                     Bank/JazzCash/Easypaisa transfer ke baad reference number
-                    aur receipt screenshot submit karen. Finance admin match
-                    karke approve karega.
+                    aur receipt screenshot submit karen. Verification ke baad payment confirm hogi. Receipt optional hai.
                   </p>
                 </div>
               </div>
@@ -299,16 +240,8 @@ function DonatePage() {
           </aside>
 
           <section className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm md:p-7">
-            {loading ? (
-              <div className="flex items-center gap-3 text-sm font-bold text-slate-700">
-                <Loader2 className="h-5 w-5 animate-spin text-amber-500" />
-                Loading member record...
-              </div>
-            ) : message && !member ? (
-              <RestrictedPanel message={message} />
-            ) : member ? (
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div>
+                {member ? <div>
                   <p className="text-xs font-black uppercase tracking-[0.18em] text-emerald-700">
                     Verified Member
                   </p>
@@ -321,12 +254,14 @@ function DonatePage() {
                     <Info label="District" value={member.district} />
                     <Info label="Taluka" value={member.taluka || "-"} />
                   </div>
-                </div>
+                </div> : <h2 className="text-2xl font-black">Public donation form</h2>}
 
                 {message ? <Alert tone="error" message={message} /> : null}
                 {success ? <Alert tone="success" message={success} /> : null}
 
                 <div className="grid gap-4 md:grid-cols-2">
+                  <Input label="Donor name" value={form.donorName} onChange={value => setForm({ ...form, donorName: value })} required />
+                  <Input label="Email or phone" value={form.contact} onChange={value => setForm({ ...form, contact: value })} required />
                   <Input
                     label="Donation Amount"
                     type="number"
@@ -372,6 +307,7 @@ function DonatePage() {
                     Receipt Screenshot / Transfer Proof
                   </span>
                   <input
+                    key={idempotencyKey}
                     type="file"
                     accept={DONATION_RECEIPT_ACCEPT}
                     onChange={handleReceipt}
@@ -383,26 +319,24 @@ function DonatePage() {
                     </span>
                   ) : (
                     <span className="mt-2 block text-xs text-slate-500">
-                      PDF, JPG, PNG or WEBP allowed.
+                      Optional: PDF, JPG, PNG or WEBP, maximum 2MB.
                     </span>
                   )}
                 </label>
 
                 <Textarea
-                  label="Notes"
+                  label="Message (optional)"
                   value={form.notes}
                   onChange={(value) => setForm({ ...form, notes: value })}
                 />
 
-                <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">
-                  <strong>Leaderboard rule:</strong> Finance admin approval ke
-                  baad donation donor leaderboard mein add hogi. Display format:
-                  name, father name, member ID, total donated aur purpose.
-                </div>
+                <p className="text-sm text-slate-600">Submission is pending verification and is not a verified payment. If the response is interrupted, retry with the same details. After reloading, reselect the same receipt if one was attached.</p>
+                <label className="hidden" aria-hidden="true">Website<input tabIndex={-1} autoComplete="off" value={website} onChange={event => setWebsite(event.target.value)} /></label>
+                <DonationSecurityCheck key={captchaRevision} onToken={setCaptchaToken} />
 
                 <button
                   type="submit"
-                  disabled={saving}
+                  disabled={saving || !idempotencyKey}
                   className="inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-6 py-4 text-sm font-black text-white transition hover:bg-emerald-900 disabled:opacity-60"
                 >
                   {saving ? (
@@ -413,33 +347,10 @@ function DonatePage() {
                   Submit Donation for Verification
                 </button>
               </form>
-            ) : null}
           </section>
         </div>
       </section>
     </main>
-  );
-}
-
-function RestrictedPanel({ message }: { message: string }) {
-  return (
-    <div className="rounded-3xl border border-amber-200 bg-amber-50 p-6 text-amber-900">
-      <div className="flex gap-3">
-        <AlertTriangle className="mt-1 h-5 w-5 flex-none" />
-        <div>
-          <h2 className="text-xl font-black">Donation form restricted</h2>
-          <p className="mt-2 text-sm leading-6">{message}</p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <Link to="/login" className="secondary-btn">
-              Login
-            </Link>
-            <Link to="/register" className="primary-btn">
-              Complete Membership
-            </Link>
-          </div>
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -474,6 +385,8 @@ function Input({
       </span>
       <input
         type={type}
+        step={type === "number" ? "0.01" : undefined}
+        min={type === "number" ? "0.01" : undefined}
         value={value}
         onChange={(event) => onChange(event.target.value)}
         required={required}
@@ -547,6 +460,7 @@ function Alert({
 }) {
   return (
     <div
+      role={tone === "error" ? "alert" : "status"}
       className={`rounded-3xl border p-4 text-sm font-semibold shadow-sm ${
         tone === "error"
           ? "border-red-200 bg-red-50 text-red-800"
