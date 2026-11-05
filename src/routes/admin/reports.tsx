@@ -14,7 +14,7 @@ import {
   ShieldAlert,
   Users,
 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import {
   currentUserCanViewReports,
@@ -23,6 +23,7 @@ import {
   formatReportDate,
   loadReportsCenterData,
   type ReportsCenterData,
+  type ReportsPeriod,
 } from '../../lib/reports'
 
 import { useAdminManagementCopy } from '../../lib/admin-management-i18n'
@@ -38,40 +39,43 @@ function AdminReportsPage() {
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState('')
   const [data, setData] = useState<ReportsCenterData | null>(null)
+  const [period, setPeriod] = useState<ReportsPeriod>('all')
+  const latestRequest = useRef(0)
 
   const loadData = useCallback(
     async (options?: { silent?: boolean }) => {
+      const requestId = ++latestRequest.current
       const silent = options?.silent ?? false
-
       if (silent) setRefreshing(true)
       else setLoading(true)
-
       setError('')
-
       try {
         const canViewReports = await currentUserCanViewReports()
-
+        if (requestId !== latestRequest.current) return
         if (!canViewReports) {
           setData(null)
           await navigate({ to: '/admin' })
           return
         }
-
-        const reports = await loadReportsCenterData()
-        setData(reports)
+        const reports = await loadReportsCenterData(period)
+        if (requestId === latestRequest.current) setData(reports)
       } catch (err) {
+        if (requestId !== latestRequest.current) return
         if (!silent) setData(null)
         setError(adminErrorMessage(err, 'Failed to load reports.'))
       } finally {
-        setLoading(false)
-        setRefreshing(false)
+        if (requestId === latestRequest.current) {
+          setLoading(false)
+          setRefreshing(false)
+        }
       }
     },
-    [navigate],
+    [navigate, period],
   )
 
   useEffect(() => {
     void loadData()
+    return () => { latestRequest.current += 1 }
   }, [loadData])
 
   const totals = useMemo(() => {
@@ -141,6 +145,29 @@ function AdminReportsPage() {
                 </p>
               </div>
 
+              <div className="flex flex-wrap items-end gap-3">
+                <label className="flex flex-col gap-1 text-xs font-bold text-slate-700">
+                  {copy.page.reportPeriod}
+                  <select
+                    aria-label={copy.page.reportPeriod}
+                    value={period}
+                    onChange={(event) => {
+                      const next = event.target.value as ReportsPeriod
+                      if (next === period) return
+                      latestRequest.current += 1
+                      setError('')
+                      setData(null) // Never export a previous period under a new label.
+                      setRefreshing(false)
+                      setLoading(true)
+                      setPeriod(next)
+                    }}
+                    className="min-h-11 rounded-xl border border-slate-300 bg-white px-3 text-sm font-bold text-slate-800"
+                  >
+                    <option value="all">{copy.page.periodAll}</option>
+                    <option value="6m">{copy.page.period6m}</option>
+                    <option value="12m">{copy.page.period12m}</option>
+                  </select>
+                </label>
               <button
                 type="button"
                 onClick={() => void loadData({ silent: true })}
@@ -151,9 +178,16 @@ function AdminReportsPage() {
                 <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
                 {refreshing ? copy.common.refreshing : copy.common.refresh}
               </button>
+              </div>
             </div>
           </div>
 
+          {data ? (
+            <p className="px-4 pt-3 text-xs font-semibold text-slate-600" role="status">
+              {copy.page.reportPeriod}: {period === 'all' ? copy.page.periodAll : period === '6m' ? copy.page.period6m : copy.page.period12m}
+              {' · '}{copy.page.generatedAt}: {formatReportDate(data.generatedAt)}
+            </p>
+          ) : null}
           {data ? (
             <div className="grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
               {data.metrics.map((metric) => (
@@ -195,7 +229,7 @@ function AdminReportsPage() {
                     label={copy.common.exportCsv}
                     onClick={() =>
                       downloadReportCsv(
-                        `jas-program-summary-${today()}.csv`,
+                        `jas-program-summary-${period === 'all' ? '' : `${period}-`}${today()}.csv`,
                         [
                           'Program',
                           copy.page.total,
@@ -237,7 +271,7 @@ function AdminReportsPage() {
                     label={copy.common.exportCsv}
                     onClick={() =>
                       downloadReportCsv(
-                        `jas-finance-purpose-${today()}.csv`,
+                        `jas-finance-purpose-${period === 'all' ? '' : `${period}-`}${today()}.csv`,
                         [
                           'Purpose',
                           'Approved Donations',
@@ -328,7 +362,7 @@ function AdminReportsPage() {
                     label={copy.common.exportCsv}
                     onClick={() =>
                       downloadReportCsv(
-                        `jas-district-summary-${today()}.csv`,
+                        `jas-district-summary-${period === 'all' ? '' : `${period}-`}${today()}.csv`,
                         [
                           'District',
                           'Members',

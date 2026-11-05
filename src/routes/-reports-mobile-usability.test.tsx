@@ -22,7 +22,7 @@ vi.mock('../components/admin/AdminShell', () => ({
 }))
 vi.mock('../lib/reports', () => ({
   currentUserCanViewReports: async () => true,
-  loadReportsCenterData: () => state.load(),
+  loadReportsCenterData: (...args: unknown[]) => state.load(...args),
   downloadReportCsv: (...args: unknown[]) => state.download(...args),
   formatCurrency: (value: number) => `Rs ${value}`,
   formatReportDate: (date: string) => date,
@@ -116,4 +116,38 @@ it('localizes navigation and scroll guidance in Urdu', async () => {
   expect(screen.getByRole('region', { name: 'مقصد کے لحاظ سے مالیات' })).toBeTruthy()
   expect(screen.getAllByText(/تمام کالم دیکھنے/)).toHaveLength(2)
   expect(screen.getAllByRole('button', { name: 'CSV ایکسپورٹ' })).toHaveLength(3)
+})
+
+
+it('selects a bounded period without changing all-time defaults or CSV column values', async () => {
+  mount()
+  await screen.findByText('Education and vocational training for families')
+  expect(state.load).toHaveBeenCalledWith('all')
+  fireEvent.change(screen.getByRole('combobox', { name: 'Report period' }), { target: { value: '6m' } })
+  await waitFor(() => expect(state.load).toHaveBeenCalledWith('6m'))
+  await screen.findByText('Education and vocational training for families')
+  fireEvent.click(screen.getAllByRole('button', { name: 'Export CSV' })[1])
+  expect(state.download).toHaveBeenCalledWith(
+    expect.stringMatching(/^jas-finance-purpose-6m-.*\.csv$/),
+    ['Purpose', 'Approved Donations', 'Donation Count', 'Paid Expenses', 'Expense Count', 'Balance'],
+    [['Education and vocational training for families', 1200, 2, 200, 1, 1000]],
+  )
+  expect(screen.getByRole('status').textContent).toContain('Last 6 months')
+})
+
+it('never exposes a stale period export after the new-period request fails', async () => {
+  state.load.mockResolvedValueOnce(report).mockRejectedValueOnce(new Error('Offline'))
+  mount()
+  await screen.findByText('Education and vocational training for families')
+  fireEvent.change(screen.getByRole('combobox', { name: 'Report period' }), { target: { value: '12m' } })
+  await screen.findByRole('alert')
+  expect(screen.queryAllByRole('button', { name: 'Export CSV' })).toHaveLength(0)
+  expect(screen.queryByText('Education and vocational training for families')).toBeNull()
+})
+
+it('offers Urdu period labels in the existing report interface', async () => {
+  localStorage.setItem('jas_language', 'ur')
+  mount()
+  await screen.findByRole('combobox', { name: 'رپورٹ کی مدت' })
+  expect(screen.getByRole('option', { name: 'گزشتہ 6 ماہ' })).toBeTruthy()
 })
