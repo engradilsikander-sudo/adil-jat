@@ -77,7 +77,7 @@ describe.skipIf(process.env.R1_LOCAL_INTEGRATION !== 'true')('R1 local JWT autho
     const row = await admin.from('finance_donations').select('donor_user_id,donor_member_id,status').eq('donation_no', result.donationNo).single()
     expect(row.data).toMatchObject({ donor_user_id: session.data.session!.user.id, donor_member_id: null, status: 'pending' })
     data.set('accessToken', 'invalid-jwt')
-    await expect(submitDonation(data)).rejects.toThrow('Session expired')
+    await expect(submitDonation(data)).rejects.toThrow('session could not be verified')
   })
   it('rejects invalid submissions in the actual server handler', async () => {
     for (const amount of ['0', '-1', '1.234', '100000001']) {
@@ -87,7 +87,37 @@ describe.skipIf(process.env.R1_LOCAL_INTEGRATION !== 'true')('R1 local JWT autho
     const missing = form(); missing.set('transactionReference', ' ')
     await expect(submitDonation(missing)).rejects.toThrow()
     const receipt = form(); receipt.set('receipt', new File(['not an image'], 'fake.png', { type: 'image/png' }))
-    await expect(submitDonation(receipt)).rejects.toThrow('valid PDF')
+    await expect(submitDonation(receipt)).rejects.toThrow('matching file contents')
+  })
+  it('rejects public cash but preserves internal cash and electronic intake compatibility', async () => {
+    const cash = form(); cash.set('paymentMethod', 'cash')
+    await expect(submitDonation(cash)).rejects.toThrow('Cash is not accepted')
+    const before = await admin.from('finance_donations').select('id', { count: 'exact', head: true }).eq('payment_method', 'cash')
+    expect(before.error).toBeNull()
+    const inserted = await admin.from('finance_donations').insert({ donor_name: 'R1-r1 Internal Cash Fixture', amount: 1, payment_method: 'cash', purpose: 'general_fund', notes: `LOCAL R1-r1 TEST ${run}`, status: 'pending' }).select('id,payment_method,status').single()
+    expect(inserted.error).toBeNull()
+    expect(inserted.data).toMatchObject({ payment_method: 'cash', status: 'pending' })
+    const after = await admin.from('finance_donations').select('id', { count: 'exact', head: true }).eq('payment_method', 'cash')
+    expect(after.count).toBe(before.count! + 1)
+    for (const method of ['bank', 'jazzcash', 'easypaisa', 'manual_transfer']) {
+      const data = form(); data.set('paymentMethod', method)
+      expect((await submitDonation(data)).status).toBe('pending')
+    }
+  })
+  it('rejects changed receipt contents with the original key and retains the original receipt', async () => {
+    const data = form()
+    const original = new File(['%PDF-1.4 original receipt'], 'proof.pdf', { type: 'application/pdf' })
+    data.set('receipt', original)
+    const accepted = await submitDonation(data)
+    data.set('receipt', new File(['%PDF-1.4 changed receipt'], 'proof.pdf', { type: 'application/pdf' }))
+    await expect(submitDonation(data)).rejects.toThrow('different details or receipt')
+    data.delete('receipt')
+    await expect(submitDonation(data)).rejects.toThrow('different details or receipt')
+    data.set('receipt', original)
+    expect(await submitDonation(data)).toEqual(accepted)
+    const row = await admin.from('finance_donations').select('receipt_file_path').eq('donation_no', accepted.donationNo).single()
+    const object = await admin.storage.from('finance-documents').download(row.data!.receipt_file_path)
+    expect(await object.data!.text()).toBe('%PDF-1.4 original receipt')
   })
   it('stores optional receipts privately and prevents listing, reading, replacement, and deletion', async () => {
     const data = form(); data.set('receipt', new File(['%PDF-1.4\nR1 local fixture'], 'proof.pdf', { type: 'application/pdf' }))
@@ -120,4 +150,3 @@ describe.skipIf(process.env.R1_LOCAL_INTEGRATION !== 'true')('R1 local JWT autho
     finally { process.env.DONATION_LOCAL_TEST = old }
   })
 })
-

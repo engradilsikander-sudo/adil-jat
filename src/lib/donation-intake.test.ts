@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { financePaymentMethodOptions } from './finance'
 import { donationIntakeSchema, validateIntakeReceipt, MAX_INTAKE_RECEIPT_BYTES } from './donation-intake'
 
 const valid = { idempotencyKey: crypto.randomUUID(), donorName: 'Public Donor', contact: 'donor@example.test', amount: '250.50', purpose: 'general_fund', paymentMethod: 'bank', transactionReference: 'TX-123', notes: '', website: '', captchaToken: '', accessToken: '' }
@@ -14,8 +15,13 @@ describe('public donation validation', () => {
   it.each([{ transactionReference: ' ' }, { donorName: '' }, { contact: 'bad-contact' }, { purpose: 'bad' }, { paymentMethod: 'bad' }, { notes: 'a'.repeat(2001) }, { website: 'bot' }, { status: 'approved' }, { donor_user_id: crypto.randomUUID() }])('rejects invalid or privileged fields %j', fields => {
     expect(donationIntakeSchema.safeParse({ ...valid, ...fields }).success).toBe(false)
   })
+  it('rejects public cash without removing cash from internal finance choices', () => {
+    expect(donationIntakeSchema.safeParse({ ...valid, paymentMethod: 'cash' }).success).toBe(false)
+    expect(financePaymentMethodOptions.some(option => option.value === 'cash')).toBe(true)
+  })
   it('accepts no receipt and validates bytes instead of trusting MIME', async () => {
     expect(await validateIntakeReceipt(null)).toBeNull()
+    await expect(validateIntakeReceipt(new File([], 'empty.pdf', { type: 'application/pdf' }))).rejects.toThrow('empty')
     await expect(validateIntakeReceipt(new File(['<script>'], 'fake.png', { type: 'image/png' }))).rejects.toThrow('valid PDF')
     await expect(validateIntakeReceipt(new File(['%PDF-1.4'], 'proof.pdf', { type: 'application/pdf' }))).resolves.toBeInstanceOf(Uint8Array)
     await expect(validateIntakeReceipt(new File(['text'], 'proof.txt', { type: 'text/plain' }))).rejects.toThrow()

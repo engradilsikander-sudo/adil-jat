@@ -1,14 +1,17 @@
 import { z } from 'zod'
 
-export const donationIntakeSchema = z.object({
-  idempotencyKey: z.uuid(),
+export const publicDonationFieldsSchema = z.object({
   donorName: z.string().trim().min(2).max(120),
   contact: z.string().trim().min(5).max(160).refine(v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || /^\+?[\d ()-]{7,25}$/.test(v), 'Enter an email address or phone number.'),
   amount: z.string().regex(/^\d{1,9}(\.\d{1,2})?$/).refine(v => Number(v) > 0 && Number(v) <= 100000000, 'Enter an amount between 0.01 and 100,000,000.'),
   purpose: z.enum(['education', 'health', 'welfare', 'general_fund']),
-  paymentMethod: z.enum(['cash', 'bank', 'jazzcash', 'easypaisa', 'manual_transfer']),
+  paymentMethod: z.enum(['bank', 'jazzcash', 'easypaisa', 'manual_transfer']),
   transactionReference: z.string().trim().min(1).max(160),
   notes: z.string().trim().max(2000),
+}).strict()
+
+export const donationIntakeSchema = publicDonationFieldsSchema.extend({
+  idempotencyKey: z.uuid(),
   website: z.string().max(0),
   captchaToken: z.string().max(2048),
   accessToken: z.string().max(8192),
@@ -17,7 +20,8 @@ export const donationIntakeSchema = z.object({
 export const MAX_INTAKE_RECEIPT_BYTES = 2 * 1024 * 1024
 
 export async function validateIntakeReceipt(file: File | null) {
-  if (!file || file.size === 0) return null
+  if (!file) return null
+  if (file.size === 0) throw new Error('Receipt must not be empty.')
   if (file.size > MAX_INTAKE_RECEIPT_BYTES) throw new Error('Receipt must be at most 2MB.')
   const bytes = new Uint8Array(await file.arrayBuffer())
   const starts = (...prefix: number[]) => prefix.every((value, i) => bytes[i] === value)

@@ -91,4 +91,3 @@ revoke all on function public.submit_public_donation(uuid,text,uuid,jsonb,text) 
 grant execute on function public.submit_public_donation(uuid,text,uuid,jsonb,text) to service_role;
 notify pgrst, 'reload schema';
 commit;
-
