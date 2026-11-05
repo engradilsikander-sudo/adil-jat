@@ -34,6 +34,8 @@ import {
 } from '../../lib/area-permissions'
 
 import { useAdminManagementCopy } from '../../lib/admin-management-i18n'
+import { useI18n } from '../../lib/i18n'
+import { adminAccessibilityCopy, fillAdminCopy } from '../../lib/i18n/admin-accessibility-copy'
 
 export const Route = createFileRoute('/admin/area-permissions')({
   component: AdminAreaPermissionsPage,
@@ -67,6 +69,8 @@ const emptyForm: FormState = {
 
 function AdminAreaPermissionsPage() {
   const { copy } = useAdminManagementCopy('areaPermissions')
+  const { language } = useI18n()
+  const text = adminAccessibilityCopy[language].area
   const [allowed, setAllowed] = useState(false)
   const [loading, setLoading] = useState(true)
   const [searching, setSearching] = useState(false)
@@ -77,6 +81,7 @@ function AdminAreaPermissionsPage() {
   const [permissions, setPermissions] = useState<AdminAreaPermission[]>([])
   const [form, setForm] = useState<FormState>(emptyForm)
   const [message, setMessage] = useState('')
+  const [messageTone, setMessageTone] = useState<'success' | 'error'>('success')
 
   useEffect(() => {
     void boot()
@@ -91,14 +96,16 @@ function AdminAreaPermissionsPage() {
       setAllowed(canManage)
 
       if (!canManage) {
-        setMessage('Only super admin can manage area-based permissions.')
+        setMessageTone('error')
+        setMessage(text.denied)
         return
       }
 
       const initialUsers = await searchUsersForAreaPermissions('')
       setUsers(initialUsers)
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to load area permissions.')
+      setMessageTone('error')
+      setMessage(err instanceof Error ? err.message : text.accessError)
     } finally {
       setLoading(false)
     }
@@ -112,7 +119,8 @@ function AdminAreaPermissionsPage() {
     try {
       setUsers(await searchUsersForAreaPermissions(query))
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to search users.')
+      setMessageTone('error')
+      setMessage(err instanceof Error ? err.message : text.searchError)
     } finally {
       setSearching(false)
     }
@@ -126,7 +134,8 @@ function AdminAreaPermissionsPage() {
     try {
       setPermissions(await fetchAreaPermissionsForUser(user.user_id))
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to load selected user permissions.')
+      setMessageTone('error')
+      setMessage(err instanceof Error ? err.message : text.loadUserError)
       setPermissions([])
     }
   }
@@ -163,11 +172,11 @@ function AdminAreaPermissionsPage() {
 
     try {
       if (form.scope !== 'all' && !form.district.trim()) {
-        throw new Error('District is required for district/taluka scope.')
+        throw new Error(text.districtRequired)
       }
 
       if (form.scope === 'taluka' && !form.taluka.trim()) {
-        throw new Error('Taluka is required for taluka scope.')
+        throw new Error(text.talukaRequired)
       }
 
       await saveAreaPermission({
@@ -186,9 +195,11 @@ function AdminAreaPermissionsPage() {
 
       setPermissions(await fetchAreaPermissionsForUser(selectedUser.user_id))
       resetForm()
-      setMessage('Area permission saved successfully.')
+      setMessageTone('success')
+      setMessage(text.saved)
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to save area permission.')
+      setMessageTone('error')
+      setMessage(err instanceof Error ? err.message : text.saveError)
     } finally {
       setSaving(false)
     }
@@ -196,7 +207,9 @@ function AdminAreaPermissionsPage() {
 
   async function handleRemove(permission: AdminAreaPermission) {
     const confirmed = window.confirm(
-      `Remove ${getAreaPermissionModuleLabel(permission.module_key)} permission for ${describeAreaPermission(permission)}?`,
+      fillAdminCopy(text.confirmRemove, {
+        module: getAreaPermissionModuleLabel(permission.module_key), area: describeAreaPermission(permission),
+      }),
     )
 
     if (!confirmed || !selectedUser) return
@@ -206,9 +219,11 @@ function AdminAreaPermissionsPage() {
     try {
       await removeAreaPermission(permission.id)
       setPermissions(await fetchAreaPermissionsForUser(selectedUser.user_id))
-      setMessage('Area permission removed.')
+      setMessageTone('success')
+      setMessage(text.removed)
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to remove area permission.')
+      setMessageTone('error')
+      setMessage(err instanceof Error ? err.message : text.removeError)
     }
   }
 
@@ -219,9 +234,9 @@ function AdminAreaPermissionsPage() {
 
   if (loading) {
     return (
-      <AdminShell title="Area Permissions" subtitle="Assign district, taluka and module-level admin access.">
+      <AdminShell title={copy.page.title} subtitle={copy.page.subtitle}>
       <div className="admin-nested-page">
-        <div className="page-wrap rounded-3xl bg-white p-5 text-sm font-bold text-slate-600 shadow-sm ring-1 ring-slate-200">
+        <div role="status" className="page-wrap rounded-3xl bg-white p-5 text-sm font-bold text-slate-600 shadow-sm ring-1 ring-slate-200">
           {copy.common.loading}
         </div>
       </div>
@@ -230,7 +245,7 @@ function AdminAreaPermissionsPage() {
   }
 
   return (
-    <AdminShell title="Area Permissions" subtitle="Assign district, taluka and module-level admin access.">
+    <AdminShell title={copy.page.title} subtitle={copy.page.subtitle}>
       <div className="admin-nested-page">
       <div className="page-wrap space-y-6">
         <Link to="/admin" className="inline-flex items-center gap-2 text-sm font-black text-emerald-800 no-underline">
@@ -263,7 +278,7 @@ function AdminAreaPermissionsPage() {
         </header>
 
         {message ? (
-          <div className={`flex items-start gap-3 rounded-2xl p-4 text-sm font-bold ring-1 ${message.toLowerCase().includes('failed') || message.toLowerCase().includes('only') || message.toLowerCase().includes('required') ? 'bg-red-50 text-red-700 ring-red-100' : 'bg-emerald-50 text-emerald-800 ring-emerald-100'}`}>
+          <div role={messageTone === 'error' ? 'alert' : 'status'} className={`flex items-start gap-3 rounded-2xl p-4 text-sm font-bold ring-1 ${messageTone === 'error' ? 'bg-red-50 text-red-700 ring-red-100' : 'bg-emerald-50 text-emerald-800 ring-emerald-100'}`}>
             <ShieldAlert className="mt-0.5 h-5 w-5 shrink-0" />
             <span>{message}</span>
           </div>
@@ -273,21 +288,23 @@ function AdminAreaPermissionsPage() {
           <div className="grid gap-6 xl:grid-cols-[420px_1fr]">
             <section className="rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200/70 sm:p-5">
               <div>
-                <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Find admin user</p>
-                <h2 className="mt-2 text-xl font-black text-slate-950">Users & Admins</h2>
+                <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">{text.findUser}</p>
+                <h2 className="mt-2 text-xl font-black text-slate-950">{text.usersTitle}</h2>
               </div>
 
               <form onSubmit={handleSearch} className="mt-4 flex gap-2">
                 <div className="relative min-w-0 flex-1">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                  <Search aria-hidden="true" className="pointer-events-none absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
+                    type="search"
+                    aria-label={text.searchUsers}
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    className="h-11 w-full rounded-xl border border-slate-200 bg-white pl-10 pr-3 text-sm font-bold text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
-                    placeholder="Email, member no, name..."
+                    className="min-h-11 w-full rounded-xl border border-slate-200 bg-white ps-10 pe-3 text-base sm:text-sm font-bold text-slate-900 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                    placeholder={text.searchPlaceholder}
                   />
                 </div>
-                <button type="submit" disabled={searching} className="primary-btn px-4 disabled:opacity-60">
+                <button aria-label={text.searchUsers} type="submit" disabled={searching} className="primary-btn px-4 disabled:opacity-60">
                   {searching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
                 </button>
               </form>
@@ -298,47 +315,49 @@ function AdminAreaPermissionsPage() {
                     key={user.user_id}
                     type="button"
                     onClick={() => void selectUser(user)}
-                    className={`rounded-2xl border p-4 text-left transition ${selectedUser?.user_id === user.user_id ? 'border-emerald-300 bg-emerald-50 ring-4 ring-emerald-100' : 'border-slate-200 bg-white hover:bg-slate-50'}`}
+                    aria-pressed={selectedUser?.user_id === user.user_id}
+                    className={`rounded-2xl border p-4 text-start transition ${selectedUser?.user_id === user.user_id ? 'border-emerald-300 bg-emerald-50 ring-4 ring-emerald-100' : 'border-slate-200 bg-white hover:bg-slate-50'}`}
                   >
                     <div className="flex items-start gap-3">
                       <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
                         <UserCog size={19} />
                       </span>
                       <span className="min-w-0 flex-1">
-                        <span className="block truncate text-sm font-black text-slate-950">{user.email ?? 'No email'}</span>
-                        <span className="mt-1 block truncate text-xs font-bold text-slate-500">{user.full_name || 'No linked member profile'}</span>
+                        <span dir="auto" className="block truncate text-sm font-black text-slate-950">{user.email ?? text.noEmail}</span>
+                        <span dir="auto" className="mt-1 block truncate text-xs font-bold text-slate-500">{user.full_name || text.noMember}</span>
                         <span className="mt-2 flex flex-wrap gap-1">
                           {user.roles.length ? user.roles.map((role) => (
                             <span key={role} className="rounded-full bg-slate-100 px-2 py-0.5 text-[0.65rem] font-black text-slate-600">{role}</span>
-                          )) : <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[0.65rem] font-black text-amber-800">No role</span>}
+                          )) : <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[0.65rem] font-black text-amber-800">{text.noRole}</span>}
                         </span>
                       </span>
                     </div>
                     <div className="mt-3 grid grid-cols-2 gap-2 text-xs font-bold text-slate-500">
-                      <span>{user.member_no || 'No member no'}</span>
-                      <span>{user.district || 'No district'}</span>
+                      <span>{user.member_no || text.noMemberNumber}</span>
+                      <span>{user.district || text.noDistrict}</span>
                     </div>
                   </button>
                 ))}
               </div>
+              {!searching && users.length === 0 ? <p role="status" className="mt-3 text-sm text-slate-600">{text.noUsers}</p> : null}
             </section>
 
             <section className="space-y-6">
               <div className="rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200/70 sm:p-5">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Selected user</p>
-                    <h2 className="mt-2 text-2xl font-black text-slate-950">
-                      {selectedUser ? selectedUser.email ?? selectedUser.user_id : 'Select a user'}
+                    <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">{text.selectedUser}</p>
+                    <h2 dir="auto" className="mt-2 text-2xl font-black text-slate-950">
+                      {selectedUser ? selectedUser.email ?? selectedUser.user_id : text.selectUser}
                     </h2>
                     <p className="mt-1 text-sm font-semibold text-slate-500">
-                      {selectedUser ? selectedUser.full_name || 'No linked member profile' : 'Choose a user from the list to assign district/taluka restrictions.'}
+                      {selectedUser ? selectedUser.full_name || text.noMember : text.chooseUser}
                     </p>
                   </div>
 
                   {selectedUser ? (
                     <div className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-black text-emerald-800 ring-1 ring-emerald-100">
-                      {activePermissions.length} active permission{activePermissions.length === 1 ? '' : 's'}
+                      {fillAdminCopy(text.activeCount, { count: activePermissions.length })}
                     </div>
                   ) : null}
                 </div>
@@ -352,51 +371,51 @@ function AdminAreaPermissionsPage() {
                         <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">
                           {form.id ? copy.page.editPermission : copy.page.newPermission}
                         </p>
-                        <h3 className="mt-2 text-xl font-black text-slate-950">Area access rule</h3>
+                        <h3 className="mt-2 text-xl font-black text-slate-950">{text.accessRule}</h3>
                       </div>
                       <button type="button" onClick={resetForm} className="secondary-btn">
-                        <Plus size={16} /> New
+                        <Plus size={16} /> {text.newRule}
                       </button>
                     </div>
 
                     <div className="mt-5 grid gap-4 lg:grid-cols-2">
-                      <Field label="Module">
+                      <Field label={text.module}>
                         <select value={form.moduleKey} onChange={(event) => setForm((current) => ({ ...current, moduleKey: event.target.value as AreaPermissionModule }))} className="form-input">
                           {areaPermissionModuleOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                         </select>
                       </Field>
 
-                      <Field label="Scope">
+                      <Field label={text.scope}>
                         <select value={form.scope} onChange={(event) => setForm((current) => ({ ...current, scope: event.target.value as AreaPermissionScope }))} className="form-input">
                           {areaPermissionScopeOptions.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
                         </select>
                       </Field>
 
                       {form.scope !== 'all' ? (
-                        <Field label="District">
-                          <input value={form.district} onChange={(event) => setForm((current) => ({ ...current, district: event.target.value }))} className="form-input" placeholder="e.g. Umerkot" />
+                        <Field label={text.district}>
+                          <input value={form.district} onChange={(event) => setForm((current) => ({ ...current, district: event.target.value }))} className="form-input" placeholder={text.exampleDistrict} />
                         </Field>
                       ) : null}
 
                       {form.scope === 'taluka' ? (
-                        <Field label="Taluka">
-                          <input value={form.taluka} onChange={(event) => setForm((current) => ({ ...current, taluka: event.target.value }))} className="form-input" placeholder="e.g. Kunri" />
+                        <Field label={text.taluka}>
+                          <input value={form.taluka} onChange={(event) => setForm((current) => ({ ...current, taluka: event.target.value }))} className="form-input" placeholder={text.exampleTaluka} />
                         </Field>
                       ) : null}
                     </div>
 
                     <div className="mt-5 grid gap-3 sm:grid-cols-3">
-                      <CheckBox label="Can view" checked={form.canView} onChange={(value) => setForm((current) => ({ ...current, canView: value }))} />
-                      <CheckBox label="Can review" checked={form.canReview} onChange={(value) => setForm((current) => ({ ...current, canReview: value }))} />
-                      <CheckBox label="Can approve" checked={form.canApprove} onChange={(value) => setForm((current) => ({ ...current, canApprove: value }))} />
+                      <CheckBox label={text.canView} checked={form.canView} onChange={(value) => setForm((current) => ({ ...current, canView: value }))} />
+                      <CheckBox label={text.canReview} checked={form.canReview} onChange={(value) => setForm((current) => ({ ...current, canReview: value }))} />
+                      <CheckBox label={text.canApprove} checked={form.canApprove} onChange={(value) => setForm((current) => ({ ...current, canApprove: value }))} />
                     </div>
 
                     <div className="mt-4">
                       <CheckBox label={copy.page.permissionActive} checked={form.isActive} onChange={(value) => setForm((current) => ({ ...current, isActive: value }))} />
                     </div>
 
-                    <Field label="Notes" className="mt-4">
-                      <textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} className="form-textarea" placeholder="Optional internal note" />
+                    <Field label={text.notes} className="mt-4">
+                      <textarea value={form.notes} onChange={(event) => setForm((current) => ({ ...current, notes: event.target.value }))} className="form-textarea" placeholder={text.notesPlaceholder} />
                     </Field>
 
                     <button type="submit" disabled={saving} className="primary-btn mt-5 disabled:opacity-60">
@@ -407,8 +426,8 @@ function AdminAreaPermissionsPage() {
 
                   <div className="rounded-[2rem] bg-white p-4 shadow-sm ring-1 ring-slate-200/70 sm:p-5">
                     <div>
-                      <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">Current permissions</p>
-                      <h3 className="mt-2 text-xl font-black text-slate-950">District / Taluka access</h3>
+                      <p className="text-xs font-black uppercase tracking-[0.2em] text-emerald-700">{text.currentPermissions}</p>
+                      <h3 className="mt-2 text-xl font-black text-slate-950">{text.districtAccess}</h3>
                     </div>
 
                     <div className="mt-5 grid gap-3">
@@ -423,7 +442,7 @@ function AdminAreaPermissionsPage() {
                                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black text-slate-700">
                                   {getAreaPermissionScopeLabel(permission.scope)}
                                 </span>
-                                {!permission.is_active ? <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-black text-red-700">Inactive</span> : null}
+                                {!permission.is_active ? <span className="rounded-full bg-red-50 px-3 py-1 text-xs font-black text-red-700">{copy.common.inactive}</span> : null}
                               </div>
                               <h4 className="mt-3 text-lg font-black text-slate-950">{describeAreaPermission(permission)}</h4>
                               <p className="mt-1 text-sm font-semibold text-slate-500">{getPermissionActionText(permission)}</p>
@@ -431,10 +450,10 @@ function AdminAreaPermissionsPage() {
                             </div>
 
                             <div className="flex gap-2">
-                              <button type="button" onClick={() => editPermission(permission)} className="secondary-btn px-4">
-                                <Edit3 size={15} /> Edit
+                              <button type="button" aria-label={fillAdminCopy(text.editFor, { module: getAreaPermissionModuleLabel(permission.module_key), area: describeAreaPermission(permission) })} onClick={() => editPermission(permission)} className="secondary-btn px-4">
+                                <Edit3 size={15} /> {text.edit}
                               </button>
-                              <button type="button" onClick={() => void handleRemove(permission)} className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-black text-red-700 transition hover:bg-red-100">
+                              <button type="button" aria-label={fillAdminCopy(text.removeFor, { module: getAreaPermissionModuleLabel(permission.module_key), area: describeAreaPermission(permission) })} onClick={() => void handleRemove(permission)} className="rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-sm font-black text-red-700 transition hover:bg-red-100">
                                 <Trash2 size={15} />
                               </button>
                             </div>
@@ -444,7 +463,7 @@ function AdminAreaPermissionsPage() {
 
                       {permissions.length === 0 ? (
                         <div className="rounded-2xl bg-slate-50 p-6 text-center text-sm font-bold text-slate-500 ring-1 ring-slate-100">
-                          No area permissions assigned yet.
+                          {text.none}
                         </div>
                       ) : null}
                     </div>

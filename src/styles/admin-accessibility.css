@@ -1,0 +1,16 @@
+/* UX.10 — avoid mobile input-focus zoom; preserve desktop sizing and existing layout. */
+@media (max-width: 767px) {
+  .admin-shell input:not([type='checkbox']):not([type='radio']),
+  .admin-shell select,
+  .admin-shell textarea {
+    font-size: 1rem;
+  }
+}
+
+/* Minimize non-essential visual motion without disabling loading feedback. */
+@media (prefers-reduced-motion: reduce) {
+  .admin-shell .animate-spin {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

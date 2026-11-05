@@ -28,6 +28,8 @@ import {
 } from '../../lib/roles'
 
 import { useAdminManagementCopy } from '../../lib/admin-management-i18n'
+import { useI18n } from '../../lib/i18n'
+import { adminAccessibilityCopy, fillAdminCopy } from '../../lib/i18n/admin-accessibility-copy'
 
 export const Route = createFileRoute('/admin/roles')({
   component: AdminRolesPage,
@@ -41,6 +43,8 @@ type RoleAction = {
 
 function AdminRolesPage() {
   const { copy } = useAdminManagementCopy('roles')
+  const { language } = useI18n()
+  const text = adminAccessibilityCopy[language].roles
   const [allowed, setAllowed] = useState(false)
   const [checkingAccess, setCheckingAccess] = useState(true)
   const [loading, setLoading] = useState(false)
@@ -63,7 +67,7 @@ function AdminRolesPage() {
       setAllowed(isSuperAdmin)
 
       if (!isSuperAdmin) {
-        setMessage('Only super admin can manage user roles and permissions.')
+        setMessage(text.denied)
         return
       }
 
@@ -72,7 +76,7 @@ function AdminRolesPage() {
       setMessage(
         err instanceof Error
           ? err.message
-          : 'Failed to verify role management access.',
+          : text.accessError,
       )
     } finally {
       setCheckingAccess(false)
@@ -99,7 +103,7 @@ function AdminRolesPage() {
         return next
       })
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to load users.')
+      setMessage(err instanceof Error ? err.message : text.loadError)
     } finally {
       setLoading(false)
     }
@@ -120,9 +124,9 @@ function AdminRolesPage() {
     try {
       await assignUserRole(user.userId, role)
       await loadUsers(query)
-      setMessage(`${getRoleLabel(role)} assigned to ${user.email}.`)
+      setMessage(fillAdminCopy(text.assigned, { role: getRoleLabel(role), email: user.email }))
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to assign role.')
+      setMessage(err instanceof Error ? err.message : text.assignError)
     } finally {
       setAction(null)
     }
@@ -130,7 +134,7 @@ function AdminRolesPage() {
 
   async function handleRemove(user: RoleUser, role: AppRole) {
     const confirmed = window.confirm(
-      `Remove ${getRoleLabel(role)} from ${user.email}?`,
+      fillAdminCopy(text.confirmRemove, { role: getRoleLabel(role), email: user.email }),
     )
 
     if (!confirmed) return
@@ -141,9 +145,9 @@ function AdminRolesPage() {
     try {
       await removeUserRole(user.userId, role)
       await loadUsers(query)
-      setMessage(`${getRoleLabel(role)} removed from ${user.email}.`)
+      setMessage(fillAdminCopy(text.removed, { role: getRoleLabel(role), email: user.email }))
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Failed to remove role.')
+      setMessage(err instanceof Error ? err.message : text.removeError)
     } finally {
       setAction(null)
     }
@@ -161,10 +165,10 @@ function AdminRolesPage() {
 
   if (checkingAccess) {
     return (
-      <AdminShell title="Roles & Permissions" subtitle="Assign and review administrator roles.">
+      <AdminShell title={copy.page.title} subtitle={copy.page.subtitle}>
       <div className="admin-nested-page">
         <div className="page-wrap rounded-[2rem] bg-white p-6 text-sm font-bold text-slate-600 shadow-sm ring-1 ring-slate-200">
-          <div className="flex items-center gap-3">
+          <div role="status" className="flex items-center gap-3">
             <Loader2 className="h-5 w-5 animate-spin text-emerald-700" />
             {copy.common.loading}
           </div>
@@ -175,7 +179,7 @@ function AdminRolesPage() {
   }
 
   return (
-    <AdminShell title="Roles & Permissions" subtitle="Assign and review administrator roles.">
+    <AdminShell title={copy.page.title} subtitle={copy.page.subtitle}>
       <div className="admin-nested-page">
       <div className="page-wrap space-y-6">
         <Link
@@ -238,7 +242,7 @@ function AdminRolesPage() {
 
         {message ? (
           <div
-            className={`flex items-start gap-3 rounded-2xl p-4 text-sm font-bold ring-1 ${
+            role="status" aria-live="polite" className={`flex items-start gap-3 rounded-2xl p-4 text-sm font-bold ring-1 ${
               allowed
                 ? 'bg-amber-50 text-amber-900 ring-amber-100'
                 : 'bg-red-50 text-red-700 ring-red-100'
@@ -251,9 +255,7 @@ function AdminRolesPage() {
 
         {!allowed ? (
           <section className="rounded-[2rem] bg-white p-6 text-sm leading-7 text-slate-600 shadow-sm ring-1 ring-slate-200">
-            This page is restricted. Login with a super admin account to manage
-            roles. Normal admin and module admins can use their assigned admin
-            pages, but cannot assign or remove roles.
+            {text.restrictedHelp}
           </section>
         ) : (
           <>
@@ -262,16 +264,18 @@ function AdminRolesPage() {
                 <label className="relative block">
                   <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <input
+                    type="search"
+                    aria-label={text.searchUsers}
                     value={query}
                     onChange={(event) => setQuery(event.target.value)}
-                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
-                    placeholder="Search by email, member name, member no or user UUID..."
+                    className="min-h-12 w-full rounded-2xl border border-slate-200 bg-white pl-11 pr-4 text-base sm:text-sm font-semibold text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
+                    placeholder={copy.page.searchPlaceholder}
                   />
                 </label>
 
                 <button type="submit" disabled={loading} className="primary-btn disabled:opacity-60">
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-                  Search Users
+                  {text.searchUsers}
                 </button>
               </form>
             </section>
@@ -288,12 +292,13 @@ function AdminRolesPage() {
                   onAssign={() => void handleAssign(user)}
                   onRemove={(role) => void handleRemove(user, role)}
                   action={action}
+                  labels={text}
                 />
               ))}
 
               {!loading && users.length === 0 ? (
                 <div className="rounded-[2rem] bg-white p-8 text-center text-sm font-bold text-slate-500 ring-1 ring-slate-200">
-                  No users found. Try searching by email, member no or member name.
+                  {text.noUsers}
                 </div>
               ) : null}
             </section>
@@ -312,6 +317,7 @@ function RoleUserCard({
   onAssign,
   onRemove,
   action,
+  labels,
 }: {
   user: RoleUser
   selectedRole: AppRole
@@ -319,6 +325,7 @@ function RoleUserCard({
   onAssign: () => void
   onRemove: (role: AppRole) => void
   action: RoleAction | null
+  labels: typeof adminAccessibilityCopy.en.roles
 }) {
   const availableRoles = roleOptions.filter((role) => !user.roles.includes(role.value))
   const assigning = action?.userId === user.userId && action.mode === 'assign'
@@ -329,23 +336,23 @@ function RoleUserCard({
         <div className="min-w-0">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
-              <h2 className="break-all text-xl font-black text-slate-950">
+              <h2 dir="auto" className="break-all text-xl font-black text-slate-950">
                 {user.email}
               </h2>
               <p className="mt-1 break-all text-xs font-bold text-slate-400">
-                User ID: {user.userId}
+                {labels.userId}: <bdi dir="ltr">{user.userId}</bdi>
               </p>
             </div>
 
             <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-black uppercase tracking-wide text-slate-600">
-              {user.roles.length} role{user.roles.length === 1 ? '' : 's'}
+              {fillAdminCopy(labels.rolesCount, { count: user.roles.length })}
             </span>
           </div>
 
           <div className="mt-4 grid gap-3 sm:grid-cols-3">
-            <InfoBox label="Member Name" value={user.memberFullName ?? 'No member profile'} />
-            <InfoBox label="Member No" value={user.memberNo ?? 'Not issued'} />
-            <InfoBox label="Member Status" value={user.memberStatus ?? 'N/A'} />
+            <InfoBox label={labels.memberName} value={user.memberFullName ?? labels.noMember} />
+            <InfoBox label={labels.memberNumber} value={user.memberNo ?? labels.notIssued} />
+            <InfoBox label={labels.memberStatus} value={user.memberStatus ?? labels.notAvailable} />
           </div>
 
           <div className="mt-4 flex flex-wrap gap-2">
@@ -364,6 +371,7 @@ function RoleUserCard({
                     disabled={Boolean(action)}
                     className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-800 ring-1 ring-emerald-100 transition hover:bg-red-50 hover:text-red-700 hover:ring-red-100 disabled:cursor-not-allowed disabled:opacity-60"
                     title={getRoleDescription(role)}
+                    aria-label={fillAdminCopy(labels.removeRole, { role: getRoleLabel(role), email: user.email })}
                   >
                     {removing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <ShieldCheck className="h-3.5 w-3.5" />}
                     {getRoleLabel(role)}
@@ -373,20 +381,21 @@ function RoleUserCard({
               })
             ) : (
               <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-black text-slate-500">
-                No admin role assigned
+                {labels.noRole}
               </span>
             )}
           </div>
         </div>
 
         <div className="rounded-2xl bg-slate-50 p-4 ring-1 ring-slate-200">
-          <p className="text-sm font-black text-slate-950">Assign new role</p>
+          <p className="text-sm font-black text-slate-950">{labels.assignHeading}</p>
           <p className="mt-1 text-xs leading-5 text-slate-500">
-            Only assign official JAS admin roles to trusted accounts.
+            {labels.assignHint}
           </p>
 
           <div className="mt-4 grid gap-3">
             <select
+              aria-label={fillAdminCopy(labels.chooseRole, { email: user.email })}
               value={selectedRole}
               onChange={(event) => onSelectedRole(event.target.value as AppRole)}
               disabled={availableRoles.length === 0}
@@ -399,7 +408,7 @@ function RoleUserCard({
                   </option>
                 ))
               ) : (
-                <option value={selectedRole}>All roles assigned</option>
+                <option value={selectedRole}>{labels.allAssigned}</option>
               )}
             </select>
 
@@ -411,7 +420,7 @@ function RoleUserCard({
               style={{ color: '#ffffff' }}
             >
               {assigning ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              {assigning ? 'Assigning...' : 'Assign Role'}
+              {assigning ? labels.assigning : labels.assignRole}
             </button>
           </div>
         </div>
@@ -450,7 +459,7 @@ function InfoBox({ label, value }: { label: string; value: string }) {
       <p className="text-[0.65rem] font-black uppercase tracking-wide text-slate-400">
         {label}
       </p>
-      <p className="mt-1 break-words text-sm font-black text-slate-900">{value}</p>
+      <p dir="auto" className="mt-1 break-words text-sm font-black text-slate-900">{value}</p>
     </div>
   )
 }

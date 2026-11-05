@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Menu, X } from 'lucide-react'
 import { AdminSidebar } from './AdminSidebar'
 import { useI18n } from '../../lib/i18n'
+import '../../styles/admin-accessibility.css'
 
 const labels = {
   en: { admin: 'Admin Panel', subtitle: 'Manage membership, programs and organization records.', nav: 'Navigation', open: 'Open admin menu', close: 'Close admin menu' },
