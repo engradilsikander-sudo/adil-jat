@@ -16,7 +16,7 @@ export default defineConfig({
     timeout: 120000,
   },
   projects: [
-    { name: 'desktop', testIgnore: '**/mobile-workflow.spec.ts', use: { ...devices['Desktop Chrome'] } },
-    { name: 'mobile', testMatch: ['**/public.spec.ts', '**/mobile-workflow.spec.ts'], use: { ...devices['Pixel 7'] } },
+    { name: 'desktop', testIgnore: ['**/mobile-workflow.spec.ts', '**/release-mobile.spec.ts'], use: { ...devices['Desktop Chrome'] } },
+    { name: 'mobile', testMatch: ['**/public.spec.ts', '**/mobile-workflow.spec.ts', '**/release-mobile.spec.ts'], use: { ...devices['Pixel 7'] } },
   ],
 })
