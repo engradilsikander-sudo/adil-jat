@@ -89,6 +89,9 @@ const config = defineConfig(({ mode }) => {
     build: {
       chunkSizeWarningLimit: 750,
       rollupOptions: {
+        checks: {
+          moduleLevelDirective: false,
+        },
         output: {
           manualChunks,
         },
