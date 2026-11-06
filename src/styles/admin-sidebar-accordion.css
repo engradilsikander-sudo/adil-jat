@@ -1,0 +1,130 @@
+/* Admin UX.14 — accessible grouped navigation and compact desktop icon rail.
+   Imported last by AdminShell; leave the mobile modal, RLS and existing page CSS alone. */
+.admin-sidebar .admin-sidebar-brand {
+  gap: 0.6rem;
+}
+.admin-sidebar-brand-copy {
+  min-width: 0;
+  flex: 1;
+}
+.admin-sidebar .admin-sidebar-collapse-toggle {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.75rem;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: .6rem;
+  color: #e6f4fa;
+  background: rgba(255,255,255,.08);
+  cursor: pointer;
+}
+.admin-sidebar .admin-sidebar-collapse-toggle:hover {
+  background: rgba(255,255,255,.2);
+}
+.admin-sidebar .admin-sidebar-group {
+  gap: .3rem;
+}
+.admin-sidebar .admin-sidebar-group-trigger {
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  width: 100%;
+  min-height: 2.9rem;
+  padding: .45rem .55rem;
+  border: 1px solid transparent;
+  border-radius: .7rem;
+  background: rgba(255,255,255,.055);
+  color: #dceafa;
+  text-align: start;
+  font-size: .76rem;
+  font-weight: 800;
+  letter-spacing: .025em;
+  cursor: pointer;
+}
+.admin-sidebar .admin-sidebar-group-trigger:hover,
+.admin-sidebar .admin-sidebar-group-trigger[aria-expanded='true'] {
+  background: rgba(255,255,255,.13);
+  color: #fff;
+}
+.admin-sidebar .admin-sidebar-group.has-active-route > .admin-sidebar-group-trigger {
+  border-color: rgba(135,219,232,.45);
+  background: #264b6d;
+  color: #fff;
+}
+.admin-sidebar .admin-sidebar-group-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 2rem;
+  height: 2rem;
+  border-radius: .6rem;
+  background: rgba(255,255,255,.09);
+}
+.admin-sidebar .admin-sidebar-group-heading {
+  min-width: 0;
+  flex: 1;
+  line-height: 1.45;
+}
+.admin-sidebar .admin-sidebar-group-chevron {
+  flex-shrink: 0;
+  transition: transform 150ms ease;
+}
+.admin-sidebar .admin-sidebar-group-chevron.is-open {
+  transform: rotate(180deg);
+}
+.admin-sidebar .admin-sidebar-group-items {
+  gap: .12rem;
+  margin-inline-start: .65rem;
+  padding-inline-start: .4rem;
+  border-inline-start: 1px solid rgba(255,255,255,.15);
+}
+.admin-sidebar .admin-sidebar-group-items[hidden] {
+  display: none !important;
+}
+.admin-sidebar :is(.admin-sidebar-collapse-toggle,.admin-sidebar-group-trigger):focus-visible {
+  outline: 3px solid #8ee0e7;
+  outline-offset: 2px;
+}
+
+@media (min-width: 1024px) {
+  .admin-shell-wrap.is-sidebar-collapsed {
+    grid-template-columns: 84px minmax(0,1fr);
+  }
+  .admin-sidebar.is-collapsed {
+    padding: .45rem;
+  }
+  .admin-sidebar.is-collapsed .admin-sidebar-brand {
+    flex-direction: column;
+    gap: .4rem;
+    padding: .5rem .25rem;
+  }
+  .admin-sidebar.is-collapsed .admin-sidebar-brand-icon {
+    width: 2.65rem;
+    height: 2.65rem;
+  }
+  .admin-sidebar.is-collapsed .admin-sidebar-collapse-toggle {
+    width: 2.65rem;
+    min-height: 2.6rem;
+  }
+  .admin-sidebar.is-collapsed .admin-sidebar-nav {
+    gap: .4rem;
+  }
+  .admin-sidebar.is-collapsed .admin-sidebar-group-trigger {
+    min-height: 3rem;
+    justify-content: center;
+    padding: .4rem;
+  }
+  .admin-sidebar.is-collapsed .admin-sidebar-group-icon {
+    flex-basis: 2.35rem;
+    height: 2.35rem;
+  }
+}
+
+/* The mobile drawer uses full-width accordions, independently of the
+   persisted desktop collapsed state. */
+.admin-sidebar-mobile .admin-sidebar-group-trigger {
+  min-height: 3rem;
+}
+@media (prefers-reduced-motion: reduce) {
+  .admin-sidebar .admin-sidebar-group-chevron { transition: none; }
+}

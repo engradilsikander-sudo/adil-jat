@@ -3,6 +3,10 @@ import { Menu, X } from 'lucide-react'
 import { AdminSidebar } from './AdminSidebar'
 import { useI18n } from '../../lib/i18n'
 import '../../styles/admin-accessibility.css'
+import '../../styles/admin-sidebar-accordion.css'
+
+// Preference affects layout only, never authorization. Restore after SSR hydration.
+const SIDEBAR_PREFERENCE_KEY = 'jas_admin_sidebar_collapsed_v1'
 
 const labels = {
   en: { admin: 'Admin Panel', subtitle: 'Manage membership, programs and organization records.', nav: 'Navigation', open: 'Open admin menu', close: 'Close admin menu' },
@@ -12,11 +16,26 @@ const labels = {
 
 export function AdminShell({ children, title, subtitle }: { children: ReactNode; title?: string; subtitle?: string }) {
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
   const dialogRef = useRef<HTMLDialogElement>(null)
   const menuButtonRef = useRef<HTMLButtonElement>(null)
   const restoreFocus = useRef(true)
   const { language, direction } = useI18n()
   const copy = labels[language]
+
+  useEffect(() => {
+    try {
+      setSidebarCollapsed(window.localStorage.getItem(SIDEBAR_PREFERENCE_KEY) === '1')
+    } catch {
+      // Private browsing/disabled storage: the toggle still works in memory.
+    }
+  }, [])
+
+  function toggleSidebarCollapsed() {
+    const next = !sidebarCollapsed
+    setSidebarCollapsed(next)
+    try { window.localStorage.setItem(SIDEBAR_PREFERENCE_KEY, next ? '1' : '0') } catch { /* optional preference */ }
+  }
 
   function closeMenu(options?: { navigating?: boolean }) {
     restoreFocus.current = !options?.navigating
@@ -44,8 +63,8 @@ export function AdminShell({ children, title, subtitle }: { children: ReactNode;
 
   return (
     <main className="admin-shell px-3 py-6 sm:px-4 sm:py-8" dir={direction}>
-      <div className="admin-shell-wrap">
-        <AdminSidebar />
+      <div className={`admin-shell-wrap${sidebarCollapsed ? ' is-sidebar-collapsed' : ''}`}>
+        <AdminSidebar collapsed={sidebarCollapsed} onToggleCollapsed={toggleSidebarCollapsed} />
         <section className="admin-shell-content">
           <div className="admin-mobile-bar">
             <div><p className="admin-mobile-eyebrow">JAS</p><h1>{title ?? copy.admin}</h1><p>{subtitle ?? copy.subtitle}</p></div>
