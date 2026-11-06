@@ -1,4 +1,5 @@
 import { useFinanceAccess } from '../../lib/use-finance-access'
+import { reserveFinanceRequest, clearFinanceRequest, financeFileDigest } from '../../lib/finance-operation'
 import { fetchAllRows, adminErrorMessage } from "../../lib/admin/data-access";
 import { LoadFailure } from "../../components/admin/LoadFailure";
 // src/routes/admin/finance.tsx
@@ -36,7 +37,6 @@ import {
   FINANCE_DOCUMENT_BUCKET,
   buildDonationReceiptText,
   buildExpenseReceiptText,
-  createFinanceDocumentStoragePath,
   financeExpenseCategoryOptions,
   financePaymentMethodOptions,
   financePurposeOptions,
@@ -76,7 +76,6 @@ type DonationForm = {
   notes: string;
 };
 
-type LinkedProgramKey = "education" | "health" | "welfare" | "";
 
 type ExpenseForm = {
   expenseTitle: string;
@@ -390,261 +389,141 @@ function FinanceAdminPage() {
 
   async function submitDonation(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (saving) return;
     setSaving(true);
-    setMessage("");
-    setSuccess("");
-
-    const access = await ensureFinanceAdminAccess();
-    if (!access.ok) {
-      setMessage(access.message);
-      setSaving(false);
-      return;
-    }
-
-    const amount = Number(donationForm.amount);
-    if (
-      !donationForm.donorName.trim() ||
-      !Number.isFinite(amount) ||
-      amount <= 0
-    ) {
-      setMessage("Donor name aur valid amount required hain.");
-      setSaving(false);
-      return;
-    }
-
-    const payload = {
-      donor_name: donationForm.donorName.trim(),
-      donor_phone: donationForm.donorPhone.trim() || null,
-      amount,
-      payment_method: donationForm.paymentMethod,
-      receipt_no: donationForm.receiptNo.trim() || null,
-      purpose: donationForm.purpose,
-      district: donationForm.district.trim() || null,
-      taluka: donationForm.taluka.trim() || null,
-      notes: donationForm.notes.trim() || null,
-      status: "pending" as FinanceStatus,
-      created_by: access.userId,
-    };
-
-    const { data, error } = await supabase
-      .from("finance_donations")
-      .insert(payload)
-      .select("*")
-      .single()
-      .returns<FinanceDonation>();
-
-    if (error) {
-      setMessage(error.message);
-      setSaving(false);
-      return;
-    }
-
-    await writeAuditLog(
-      access.userId,
-      "created_donation",
-      "finance_donations",
-      data.id,
-      null,
-      data,
-    );
-    setDonationForm(initialDonationForm);
-    setSuccess("Donation record saved for finance approval.");
-    setSaving(false);
-    await loadFinanceData();
+    setMessage(""); setSuccess("");
+    try {
+      const access = await ensureFinanceAdminAccess();
+      if (!access.ok) { setMessage(access.message); return; }
+      const amount = Number(donationForm.amount);
+      if (!donationForm.donorName.trim() || !Number.isFinite(amount) || amount <= 0) {
+        setMessage("Donor name aur valid amount required hain."); return;
+      }
+      const payload = {
+        donor_name: donationForm.donorName.trim(),
+        donor_phone: donationForm.donorPhone.trim() || null,
+        amount,
+        payment_method: donationForm.paymentMethod,
+        receipt_no: donationForm.receiptNo.trim() || null,
+        purpose: donationForm.purpose,
+        district: donationForm.district.trim() || null,
+        taluka: donationForm.taluka.trim() || null,
+        notes: donationForm.notes.trim() || null,
+      };
+      const key = await reserveFinanceRequest('create:donation', payload);
+      const { error } = await supabase.rpc('finance_create_record' as never, {
+        _entity_type: 'finance_donations', _request_key: key, _payload: payload,
+      } as never);
+      if (error) { setMessage('Donation save confirm nahi ho saka. Ledger check karein, phir unchanged form se retry karein.'); return; }
+      clearFinanceRequest('create:donation');
+      setDonationForm(initialDonationForm);
+      await loadFinanceData();
+      setSuccess('Donation pending verification mein safely saved.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Donation outcome unconfirmed. Ledger check karein; unchanged form retry karein.');
+    } finally { setSaving(false); }
   }
 
   async function submitExpense(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSaving(true);
-    setMessage("");
-    setSuccess("");
-
-    const access = await ensureFinanceAdminAccess();
-    if (!access.ok) {
-      setMessage(access.message);
-      setSaving(false);
-      return;
-    }
-
-    const amount = Number(expenseForm.amount);
-    if (
-      !expenseForm.expenseTitle.trim() ||
-      !expenseForm.paidTo.trim() ||
-      !Number.isFinite(amount) ||
-      amount <= 0
-    ) {
-      setMessage("Expense title, paid to aur valid amount required hain.");
-      setSaving(false);
-      return;
-    }
-
-    let documentPath: string | null = null;
-
-    if (expenseFile) {
-      const fileError = validateFinanceDocumentFile(expenseFile);
-      if (fileError) {
-        setMessage(fileError);
-        setSaving(false);
-        return;
+    if (saving) return;
+    setSaving(true); setMessage(''); setSuccess('');
+    try {
+      const access = await ensureFinanceAdminAccess();
+      if (!access.ok) { setMessage(access.message); return; }
+      const amount = Number(expenseForm.amount);
+      if (!expenseForm.expenseTitle.trim() || !expenseForm.paidTo.trim() || !Number.isFinite(amount) || amount <= 0) {
+        setMessage('Expense title, paid to aur valid amount required hain.'); return;
       }
-
-      documentPath = createFinanceDocumentStoragePath({
-        userId: access.userId,
-        folder: "expenses",
-        fileName: expenseFile.name,
+      if (expenseFile) {
+        const problem = validateFinanceDocumentFile(expenseFile);
+        if (problem) { setMessage(problem); return; }
+      }
+      const payloadBase = {
+        expense_title: expenseForm.expenseTitle.trim(), amount,
+        category: expenseForm.category,
+        linked_program_key: expenseForm.linkedProgramKey || null,
+        linked_application_id: expenseForm.linkedApplicationId.trim() || null,
+        payment_method: expenseForm.paymentMethod, paid_to: expenseForm.paidTo.trim(),
+        district: expenseForm.district.trim() || null,
+        taluka: expenseForm.taluka.trim() || null,
+        receipt_no: expenseForm.receiptNo.trim() || null,
+        notes: expenseForm.notes.trim() || null,
+      };
+      const receiptDigest = expenseFile ? await financeFileDigest(expenseFile) : null;
+      const key = await reserveFinanceRequest('create:expense', {
+        ...payloadBase, receiptDigest, receiptType: expenseFile?.type || null,
       });
+      let documentPath: string | null = null;
+      if (expenseFile) {
+        const extensionByType: Record<string, string> = {
+          'application/pdf': 'pdf', 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp',
+        };
+        const extension = extensionByType[expenseFile.type];
+        if (!extension) { setMessage('Unsupported document type.'); return; }
+        documentPath = `${access.userId}/expenses/${key}.${extension}`;
+        const { error: uploadError } = await supabase.storage
+          .from(FINANCE_DOCUMENT_BUCKET).upload(documentPath, expenseFile, {
+            cacheControl: '3600', upsert: false, contentType: expenseFile.type,
+          });
+        if (uploadError) {
+          if (String(uploadError.statusCode) !== '409') {
+            setMessage('Document upload incomplete. Same file se retry karein.'); return;
+          }
+          const existing = await supabase.storage.from(FINANCE_DOCUMENT_BUCKET).download(documentPath);
+          if (existing.error || !existing.data || (await financeFileDigest(existing.data)) !== receiptDigest) {
+            setMessage('Existing document mismatch. Do not replace it; review upload before retry.'); return;
+          }
+        }
+      }
+      const payload = { ...payloadBase, document_path: documentPath };
+      const { error } = await supabase.rpc('finance_create_record' as never, {
+        _entity_type: 'finance_expenses', _request_key: key, _payload: payload,
+      } as never);
+      if (error) { setMessage('Expense save confirm nahi ho saka. Ledger check karein, phir same details/file se retry karein.'); return; }
+      clearFinanceRequest('create:expense');
+      setExpenseForm(initialExpenseForm); setExpenseFile(null);
+      await loadFinanceData();
+      setSuccess('Expense pending approval mein safely saved.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Expense outcome unconfirmed. Ledger check karein; unchanged form retry karein.');
+    } finally { setSaving(false); }
+  }
 
-      const { error: uploadError } = await supabase.storage
-        .from(FINANCE_DOCUMENT_BUCKET)
-        .upload(documentPath, expenseFile, {
-          cacheControl: "3600",
-          upsert: false,
-          contentType: expenseFile.type,
-        });
+  async function updateDonationStatus(donation: FinanceDonation, status: FinanceStatus) {
+    await updateFinanceRecord('finance_donations', donation, status);
+  }
 
-      if (uploadError) {
-        setMessage(uploadError.message);
-        setSaving(false);
+  async function updateExpenseStatus(expense: FinanceExpense, status: ExpenseStatus) {
+    await updateFinanceRecord('finance_expenses', expense, status);
+  }
+
+  async function updateFinanceRecord(
+    entityType: 'finance_donations' | 'finance_expenses',
+    original: FinanceDonation | FinanceExpense,
+    status: FinanceStatus | ExpenseStatus,
+  ) {
+    if (saving) return;
+    setSaving(true); setMessage(''); setSuccess('');
+    try {
+      const access = await ensureFinanceAdminAccess();
+      if (!access.ok) { setMessage(access.message); return; }
+      const scope = `decide:${entityType}:${original.id}:${original.status}:${status}`;
+      const key = await reserveFinanceRequest(scope, { entityType, id: original.id, from: original.status, to: status });
+      const { error } = await supabase.rpc('finance_decide' as never, {
+        _entity_type: entityType, _entity_id: original.id,
+        _expected_status: original.status, _next_status: status, _decision_key: key,
+      } as never);
+      if (error) {
+        setMessage('Decision stale, rejected, ya outcome unconfirmed. Finance ledger refresh karein; dobara action par same request key use hogi.');
         return;
       }
-    }
-
-    const payload = {
-      expense_title: expenseForm.expenseTitle.trim(),
-      amount,
-      category: expenseForm.category,
-      linked_program_key: (expenseForm.linkedProgramKey || null) as Exclude<
-        LinkedProgramKey,
-        ""
-      > | null,
-      linked_application_id: expenseForm.linkedApplicationId.trim() || null,
-      payment_method: expenseForm.paymentMethod,
-      paid_to: expenseForm.paidTo.trim(),
-      district: expenseForm.district.trim() || null,
-      taluka: expenseForm.taluka.trim() || null,
-      receipt_no: expenseForm.receiptNo.trim() || null,
-      document_path: documentPath,
-      notes: expenseForm.notes.trim() || null,
-      status: "pending" as ExpenseStatus,
-      created_by: access.userId,
-    };
-
-    const { data, error } = await supabase
-      .from("finance_expenses")
-      .insert(payload)
-      .select("*")
-      .single()
-      .returns<FinanceExpense>();
-
-    if (error) {
-      setMessage(error.message);
-      setSaving(false);
-      return;
-    }
-
-    await writeAuditLog(
-      access.userId,
-      "created_expense",
-      "finance_expenses",
-      data.id,
-      null,
-      data,
-    );
-    setExpenseForm(initialExpenseForm);
-    setExpenseFile(null);
-    setSuccess("Expense record saved for finance approval.");
-    setSaving(false);
-    await loadFinanceData();
-  }
-
-  async function updateDonationStatus(
-    donation: FinanceDonation,
-    status: FinanceStatus,
-  ) {
-    await updateFinanceRecord({
-      entityType: "finance_donations",
-      id: donation.id,
-      oldData: donation,
-      status,
-      action: status === "approved" ? "approved_donation" : "rejected_donation",
-    });
-  }
-
-  async function updateExpenseStatus(
-    expense: FinanceExpense,
-    status: ExpenseStatus,
-  ) {
-    await updateFinanceRecord({
-      entityType: "finance_expenses",
-      id: expense.id,
-      oldData: expense,
-      status,
-      action:
-        status === "paid"
-          ? "marked_expense_paid"
-          : status === "approved"
-            ? "approved_expense"
-            : "rejected_expense",
-    });
-  }
-
-  async function updateFinanceRecord({
-    entityType,
-    id,
-    oldData,
-    status,
-    action,
-  }: {
-    entityType: "finance_donations" | "finance_expenses";
-    id: string;
-    oldData: FinanceDonation | FinanceExpense;
-    status: FinanceStatus | ExpenseStatus;
-    action: string;
-  }) {
-    setMessage("");
-    setSuccess("");
-    const access = await ensureFinanceAdminAccess();
-
-    if (!access.ok) {
-      setMessage(access.message);
-      return;
-    }
-
-    const patch: Record<string, unknown> = { status };
-
-    if (status === "approved") {
-      patch.approved_by = access.userId;
-      patch.approved_at = new Date().toISOString();
-      patch.rejected_by = null;
-      patch.rejected_at = null;
-    }
-
-    if (status === "rejected") {
-      patch.rejected_by = access.userId;
-      patch.rejected_at = new Date().toISOString();
-    }
-
-    if (status === "paid") {
-      patch.paid_by = access.userId;
-      patch.paid_at = new Date().toISOString();
-    }
-
-    const query = supabase
-      .from(entityType)
-      .update(patch as never)
-      .eq("id", id)
-      .select("*")
-      .single();
-    const { data, error } = await query;
-
-    if (error) {
-      setMessage(error.message);
-      return;
-    }
-
-    await writeAuditLog(access.userId, action, entityType, id, oldData, data);
-    setSuccess("Finance record updated and audit log saved.");
-    await loadFinanceData();
+      clearFinanceRequest(scope);
+      await loadFinanceData();
+      setSuccess('Finance decision safely committed with its audit entry.');
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Finance decision unconfirmed. Refresh karein.');
+    } finally { setSaving(false); }
   }
 
   async function openFinanceDocument(path: string) {
@@ -892,6 +771,11 @@ function FinanceAdminPage() {
                 onChange={setDonationForm}
                 onSubmit={submitDonation}
               />
+              <button type="button" className="text-xs underline" onClick={() => {
+                if (window.confirm('Pehle Finance ledger check karein. Reset se ambiguous submission duplicate ho sakti hai. Reset attempt?')) {
+                  clearFinanceRequest('create:donation'); setMessage('Donation attempt reset.');
+                }
+              }}>Reset donation attempt after checking ledger</button>
               <DonationList
                 items={filteredDonations}
                 onApprove={(item) =>
@@ -911,6 +795,11 @@ function FinanceAdminPage() {
                 onFileChange={setExpenseFile}
                 onSubmit={submitExpense}
               />
+              <button type="button" className="text-xs underline" onClick={() => {
+                if (window.confirm('Pehle Finance ledger check karein. Reset se ambiguous submission duplicate ho sakti hai. Reset attempt?')) {
+                  clearFinanceRequest('create:expense'); setMessage('Expense attempt reset.');
+                }
+              }}>Reset expense attempt after checking ledger</button>
               <ExpenseList
                 items={filteredExpenses}
                 onApprove={(item) => void updateExpenseStatus(item, "approved")}
@@ -1716,24 +1605,6 @@ async function ensureFinanceAdminAccess(): Promise<AccessState> {
   }
 
   return { ok: true, userId: user.id };
-}
-
-async function writeAuditLog(
-  actorUserId: string,
-  action: string,
-  entityType: string,
-  entityId: string,
-  oldData: unknown,
-  newData: unknown,
-) {
-  await supabase.from("finance_audit_logs").insert({
-    actor_user_id: actorUserId,
-    action,
-    entity_type: entityType,
-    entity_id: entityId,
-    old_data: oldData as never,
-    new_data: newData as never,
-  });
 }
 
 function getUniqueOptions(values: Array<string | null>) {

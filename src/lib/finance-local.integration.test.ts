@@ -84,7 +84,8 @@ describe.skipIf(process.env.R1_LOCAL_INTEGRATION !== 'true')('R1.2 real JWT Fina
         const read = await client.from(table).select('id').eq('id', id)
         if (allowed) { expect(read.error).toBeNull(); expect(read.data).toHaveLength(1) } else denied(read)
         const write = await client.from(table).insert(row as Record<string, unknown>).select('id')
-        if (allowed) { expect(write.error).toBeNull(); expect(write.data).toHaveLength(1) } else expect(write.error).not.toBeNull()
+        // R1.3: even Super Admin cannot bypass the audited creation RPC.
+        expect(write.error).not.toBeNull()
         if (table !== 'finance_audit_logs' && !allowed) denied(await client.from(table).update({ status: 'approved' }).eq('id', id).select('id'))
         // No finance records are deleted, including fixtures. DELETE lacks a grant.
         expect((await client.from(table).delete().eq('id', crypto.randomUUID())).error).not.toBeNull()
@@ -143,13 +144,101 @@ describe.skipIf(process.env.R1_LOCAL_INTEGRATION !== 'true')('R1.2 real JWT Fina
     expect((await member.rpc('get_donor_leaderboard')).error).toBeNull()
   })
 
+  it('R1.3: authenticated Finance writes require RPCs and audit rows are authoritative', async () => {
+    const superAdmin = actors.super.client
+    const ordinaryAdmin = actors.admin.client
+    const donationPayload = { ...donation, donor_name: `LOCAL R1.3 ${run}`, payment_method: 'cash' }
+    const key = crypto.randomUUID()
+    const request = { _entity_type: 'finance_donations', _request_key: key, _payload: donationPayload }
+    const [first, second] = await Promise.all([
+      superAdmin.rpc('finance_create_record', request),
+      superAdmin.rpc('finance_create_record', request),
+    ])
+    expect(first.error).toBeNull(); expect(second.error).toBeNull()
+    expect(first.data.id).toBe(second.data.id)
+    expect(first.data.status).toBe('pending')
+    const events = await superAdmin.from('finance_audit_logs').select('id,action,actor_user_id')
+      .eq('entity_type', 'finance_donations').eq('entity_id', first.data.id)
+    expect(events.error).toBeNull()
+    expect(events.data).toHaveLength(1)
+    expect(events.data?.[0].action).toBe('created_donation')
+    expect(events.data?.[0].actor_user_id).toBe(actors.super.id)
+    expect((await superAdmin.from('finance_donations').update({ status: 'approved' }).eq('id', first.data.id).select()).error).not.toBeNull()
+    expect((await superAdmin.from('finance_audit_logs').insert({
+      actor_user_id: actors.super.id, action: 'FABRICATED', entity_type: 'finance_donations', entity_id: first.data.id,
+    })).error).not.toBeNull()
+    expect((await ordinaryAdmin.rpc('finance_create_record', { ...request, _request_key: crypto.randomUUID() })).error).not.toBeNull()
+    expect((await ordinaryAdmin.rpc('finance_decide', {
+      _entity_type: 'finance_donations', _entity_id: first.data.id, _expected_status: 'pending',
+      _next_status: 'approved', _decision_key: crypto.randomUUID(),
+    })).error).not.toBeNull()
+    expect((await superAdmin.from('finance_operation_keys').select('idempotency_key')).error).not.toBeNull()
+  })
+
+  it('R1.3: decisions serialize, reject stale states and replay the exact key once', async () => {
+    const admin = actors.super.client
+    const d = await admin.rpc('finance_create_record', {
+      _entity_type: 'finance_donations', _request_key: crypto.randomUUID(),
+      _payload: { ...donation, donor_name: `LOCAL R1.3 races ${run}` },
+    })
+    expect(d.error).toBeNull()
+    const key = crypto.randomUUID()
+    const base = { _entity_type: 'finance_donations', _entity_id: d.data.id, _expected_status: 'pending' }
+    const [approved, competing] = await Promise.all([
+      admin.rpc('finance_decide', { ...base, _next_status: 'approved', _decision_key: key }),
+      admin.rpc('finance_decide', { ...base, _next_status: 'rejected', _decision_key: crypto.randomUUID() }),
+    ])
+    expect([approved.error, competing.error].filter(error => error === null)).toHaveLength(1)
+    // A stale decision is a domain conflict, not PostgreSQL serialization_failure (40001).
+    // 40001 can trigger a PostgREST retry loop and hang the HTTP request.
+    expect((approved.error ?? competing.error)?.code).toBe('PT409')
+    const winner = approved.error ? 'rejected' : 'approved'
+    const winnerKey = approved.error ? null : key
+    if (winnerKey) {
+      const replay = await admin.rpc('finance_decide', { ...base, _next_status: 'approved', _decision_key: winnerKey })
+      expect(replay.error).toBeNull()
+      expect(replay.data.replayed).toBe(true)
+      expect((await admin.rpc('finance_decide', {
+        ...base, _next_status: 'rejected', _decision_key: winnerKey,
+      })).error).not.toBeNull()
+    }
+    const row = await admin.from('finance_donations').select('status').eq('id', d.data.id).single()
+    expect(row.error).toBeNull(); expect(row.data?.status).toBe(winner)
+    const events = await admin.from('finance_audit_logs').select('id').eq('entity_type', 'finance_donations')
+      .eq('entity_id', d.data.id)
+    expect(events.error).toBeNull(); expect(events.data).toHaveLength(2) // create + one decision
+
+    const expenseCreated = await admin.rpc('finance_create_record', {
+      _entity_type: 'finance_expenses', _request_key: crypto.randomUUID(), _payload: { ...expense },
+    })
+    expect(expenseCreated.error).toBeNull()
+    const makeDecision = (from: string, to: string) => admin.rpc('finance_decide', {
+      _entity_type: 'finance_expenses', _entity_id: expenseCreated.data.id,
+      _expected_status: from, _next_status: to, _decision_key: crypto.randomUUID(),
+    })
+    expect((await makeDecision('pending','approved')).error).toBeNull()
+    expect((await makeDecision('approved','paid')).error).toBeNull()
+    expect((await makeDecision('paid','rejected')).error).not.toBeNull()
+  }, 30000)
+
   it('supports Super Admin decisions, internal cash, accurate reports and immediate database role revocation', async () => {
     const client = actors.super.client
-    const d = await client.from('finance_donations').insert({ ...donation, payment_method: 'cash' }).select('id').single()
-    const e = await client.from('finance_expenses').insert(expense).select('id').single()
+    const d = await client.rpc('finance_create_record', {
+      _entity_type: 'finance_donations', _request_key: crypto.randomUUID(),
+      _payload: { ...donation, payment_method: 'cash' },
+    })
+    const e = await client.rpc('finance_create_record', {
+      _entity_type: 'finance_expenses', _request_key: crypto.randomUUID(), _payload: expense,
+    })
     expect(d.error).toBeNull(); expect(e.error).toBeNull()
-    for (const status of ['approved', 'rejected']) expect((await client.from('finance_donations').update({ status }).eq('id', d.data!.id).select().single()).error).toBeNull()
-    for (const status of ['approved', 'paid', 'rejected']) expect((await client.from('finance_expenses').update({ status }).eq('id', e.data!.id).select().single()).error).toBeNull()
+    const decide = (entityType: string, id: string, from: string, to: string) => client.rpc('finance_decide', {
+      _entity_type: entityType, _entity_id: id, _expected_status: from,
+      _next_status: to, _decision_key: crypto.randomUUID(),
+    })
+    expect((await decide('finance_donations', d.data.id, 'pending', 'approved')).error).toBeNull()
+    expect((await decide('finance_expenses', e.data.id, 'pending', 'approved')).error).toBeNull()
+    expect((await decide('finance_expenses', e.data.id, 'approved', 'paid')).error).toBeNull()
+    expect((await decide('finance_expenses', e.data.id, 'paid', 'rejected')).error).not.toBeNull()
     const report = await client.rpc('jas_reports_center_summary', { _period: 'all' })
     expect(report.error).toBeNull(); expect(report.data.financeVisible).toBe(true)
     const rows = await service.from('finance_donations').select('amount').eq('status', 'approved')
