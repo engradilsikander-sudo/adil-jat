@@ -97,7 +97,7 @@ const common: Record<AppLanguage, LabelMap> = {
 const pages: Record<ManagementPageKey, Record<AppLanguage, LabelMap>> = {
   finance: {
     en: {
-      badge: 'Finance Admin',
+      badge: 'Super Admin Finance',
       title: 'Finance, Donations & Expenses',
       subtitle: 'Record donations, approve expenses, verify finance documents and review finance audit history.',
       totalDonations: 'Total Donations',
@@ -110,7 +110,7 @@ const pages: Record<ManagementPageKey, Record<AppLanguage, LabelMap>> = {
       noAuditLogs: 'No audit logs yet',
     },
     ur: {
-      badge: 'فنانس ایڈمن',
+      badge: 'سپر ایڈمن فنانس',
       title: 'فنانس، عطیات اور اخراجات',
       subtitle: 'عطیات ریکارڈ کریں، اخراجات منظور کریں، فنانس دستاویزات کی تصدیق کریں اور آڈٹ ہسٹری دیکھیں۔',
       totalDonations: 'کل عطیات',
@@ -123,7 +123,7 @@ const pages: Record<ManagementPageKey, Record<AppLanguage, LabelMap>> = {
       noAuditLogs: 'ابھی کوئی آڈٹ لاگ نہیں',
     },
     sd: {
-      badge: 'فنانس ايڊمن',
+      badge: 'سپر ايڊمن فنانس',
       title: 'فنانس، عطيا ۽ خرچ',
       subtitle: 'عطيا رڪارڊ ڪريو، خرچ منظور ڪريو، فنانس دستاويز تصديق ڪريو ۽ آڊٽ هسٽري ڏسو.',
       totalDonations: 'ڪل عطيا',

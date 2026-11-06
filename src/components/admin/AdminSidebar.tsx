@@ -2,22 +2,7 @@ import { useFinanceAccess } from '../../lib/use-finance-access'
 import { useI18n, type AppLanguage } from '../../lib/i18n'
 import { Link, useRouterState } from '@tanstack/react-router'
 import { ChevronRight, LockKeyhole } from 'lucide-react'
-import { adminNavigationGroups, type AdminNavigationItem } from '../../config/admin-navigation'
-
-function normalizePath(path: string) {
-  return path.replace(/\/+$/, '') || '/'
-}
-
-function isActivePath(currentPath: string, itemTo?: string) {
-  if (!itemTo) return false
-
-  const current = normalizePath(currentPath)
-  const target = normalizePath(itemTo)
-
-  if (target === '/admin') return current === '/admin'
-
-  return current === target || current.startsWith(`${target}/`)
-}
+import { getVisibleAdminNavigationGroups, isActiveAdminNavigationItem, type AdminNavigationItem } from '../../config/admin-navigation'
 
 export function AdminSidebar({
   mobile = false,
@@ -26,7 +11,9 @@ export function AdminSidebar({
   mobile?: boolean
   onNavigate?: () => void
 }) {
-  const { allowed: financeAllowed } = useFinanceAccess()
+  // The database-backed Finance gate is Super Admin-only (R1.2). Fail closed
+  // while checking, on RPC failure, or immediately after role revocation.
+  const { allowed: superAdminAllowed } = useFinanceAccess()
   const { language } = useI18n()
   const translate = (value: string) => navLabel(value, language)
   const pathname = useRouterState({
@@ -47,16 +34,16 @@ export function AdminSidebar({
       </div>
 
       <nav className="admin-sidebar-nav">
-        {adminNavigationGroups.map((group) => (
+        {getVisibleAdminNavigationGroups(superAdminAllowed).map((group) => (
           <section key={group.title} className="admin-sidebar-group">
             <p className="admin-sidebar-group-title">{translate(group.title)}</p>
 
             <div className="admin-sidebar-group-items">
-              {group.items.filter((item) => item.to !== '/admin/finance' || financeAllowed).map((item) => (
+              {group.items.map((item) => (
                 <AdminSidebarItem
                   key={`${group.title}-${item.label}`}
                   item={item}
-                  active={isActivePath(pathname, item.to)}
+                  active={isActiveAdminNavigationItem(pathname, item)}
                   onNavigate={onNavigate}
                 />
               ))}

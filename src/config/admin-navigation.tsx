@@ -57,6 +57,43 @@ export type AdminNavigationGroup = {
   items: AdminNavigationItem[]
 }
 
+/**
+ * Navigation presentation only; RLS and server/RPC guards remain authoritative.
+ * Uses the same database-backed Super Admin gate as Finance (R1.2).
+ */
+const superAdminOnlyRoutes: ReadonlySet<AdminNavigationRoute> = new Set<AdminNavigationRoute>([
+  '/admin/finance',
+  '/admin/roles',
+  '/admin/area-permissions',
+  '/admin/audit-logs',
+])
+
+export function getVisibleAdminNavigationGroups(superAdminAllowed: boolean): AdminNavigationGroup[] {
+  return adminNavigationGroups.map((group) => ({
+    ...group,
+    items: group.items.filter((item) =>
+      !item.to || !superAdminOnlyRoutes.has(item.to) || superAdminAllowed,
+    ),
+  })).filter((group) => group.items.length > 0)
+}
+
+function normalizeAdminPath(path: string): string {
+  return path.replace(/\/+$/, '') || '/'
+}
+
+/**
+ * The Dashboard, Members, Pending Applications and Digital Cards legacy links
+ * all navigate to /admin. Only Dashboard may show aria-current on that path.
+ * This is visual state, not a change to the existing destinations or workflows.
+ */
+export function isActiveAdminNavigationItem(pathname: string, item: AdminNavigationItem): boolean {
+  if (item.disabled || !item.to) return false
+  const current = normalizeAdminPath(pathname)
+  const target = normalizeAdminPath(item.to)
+  if (target === '/admin') return current === '/admin' && item.label === 'Dashboard'
+  return current === target || current.startsWith(`${target}/`)
+}
+
 export const adminNavigationGroups: AdminNavigationGroup[] = [
   {
     title: 'Overview',
