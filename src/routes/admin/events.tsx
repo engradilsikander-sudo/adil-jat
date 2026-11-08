@@ -146,7 +146,7 @@ function AdminEventsPage() {
             <div>
               <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">News & Media</p>
               <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">Events Admin</h1>
-              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Create and publish JAS public events and meeting notices.</p>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">Create and publish JWAS public events and meeting notices.</p>
             </div>
             <button type="button" onClick={() => void loadEvents()} className="secondary-btn"><RefreshCw size={16} /> Refresh</button>
           </div>

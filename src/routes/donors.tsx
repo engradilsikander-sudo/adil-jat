@@ -99,10 +99,10 @@ function DonorsPage() {
           <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
             <div>
               <h1 className="text-4xl font-black md:text-6xl">
-                JAS Top Donors
+                JWAS Top Donors
               </h1>
               <p className="mt-4 max-w-3xl text-lg leading-8 text-white/70">
-                Approved JAS members ke liye donor leaderboard. Sirf finance
+                Approved JWAS members ke liye donor leaderboard. Sirf finance
                 admin approved donations count hoti hain.
               </p>
             </div>
@@ -111,7 +111,7 @@ function DonorsPage() {
               <ShieldCheck className="h-8 w-8 text-amber-300" />
               <h2 className="mt-3 text-xl font-black">Privacy Rule</h2>
               <p className="mt-2 text-sm leading-6 text-white/70">
-                Ye leaderboard sirf logged-in approved JAS members ko show hota
+                Ye leaderboard sirf logged-in approved JWAS members ko show hota
                 hai. CNIC, phone, receipt aur transaction reference hidden rehte
                 hain.
               </p>
@@ -348,7 +348,7 @@ async function ensureApprovedMemberAccess(): Promise<AccessState> {
       ok: false,
       action: "membership",
       message:
-        "Ye donor leaderboard sirf approved JAS members ke liye available hai.",
+        "Ye donor leaderboard sirf approved JWAS members ke liye available hai.",
     };
   }
 

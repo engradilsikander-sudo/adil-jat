@@ -1,6 +1,6 @@
-# Jatt Alliance Sindh (JAS) Web App
+# Jatt Welfare Alliance Sindh (JWAS) Web App
 
-A member-verified web platform for Jatt Alliance Sindh. The app combines digital membership registration, admin approval, QR-based member cards, program applications, finance tracking, donations, donor leaderboard, employment support, and member notifications.
+A member-verified web platform for Jatt Welfare Alliance Sindh. The app combines digital membership registration, admin approval, QR-based member cards, program applications, finance tracking, donations, donor leaderboard, employment support, and member notifications.
 
 ## Current modules
 
@@ -295,7 +295,7 @@ If a raw zip containing `.env`, `.env.local`, `SUPABASE_SERVICE_ROLE_KEY`, or a 
 
 ## Phase 8 email system
 
-Branded JAS authentication templates are stored in `supabase/templates/`. Signup email confirmation is intentionally excluded and local `auth.email.enable_confirmations` remains `false`, so new email/password users can sign in immediately. Password recovery, email-change, invitation, security, and important membership/program notifications remain supported through Supabase Auth and the protected `send-notification-emails` Edge Function with Brevo.
+Branded JWAS authentication templates are stored in `supabase/templates/`. Signup email confirmation is intentionally excluded and local `auth.email.enable_confirmations` remains `false`, so new email/password users can sign in immediately. Password recovery, email-change, invitation, security, and important membership/program notifications remain supported through Supabase Auth and the protected `send-notification-emails` Edge Function with Brevo.
 
 Validate templates and core QA:
 
@@ -334,3 +334,7 @@ npx supabase functions deploy send-web-push --no-verify-jwt
 ```
 
 Schedule a trusted one-minute POST request to the function with the `X-Push-Secret` header and `{"batch_size":20}` body. Full migration, Cron, preference, delivery-log, and production test instructions are in `PATCH_NOTES_PHASE9_WEB_PUSH_RELIABILITY.md`.
+
+## Organization identity
+
+User-facing branding is **Jatt Welfare Alliance Sindh (JWAS)**. Legacy `JAS-…` membership/office-bearer IDs, APIs, storage keys and asset paths remain compatible. See [Branding B1 delivery](docs/JWAS-BRANDING-B1-DELIVERY.md) for the preserved original-logo artwork and protected email-subject configuration follow-ups.

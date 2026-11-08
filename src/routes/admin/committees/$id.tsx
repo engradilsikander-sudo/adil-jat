@@ -169,7 +169,7 @@ function AdminCommitteeDetailPage() {
       committeeForm.committeeType === 'central_advisory' ||
       committeeForm.committeeType === 'provincial'
     ) {
-      return 'Searching all approved JAS members with issued member numbers.'
+      return 'Searching all approved JWAS members with issued member numbers.'
     }
 
     if (committeeForm.committeeType === 'divisional') {
@@ -698,7 +698,7 @@ function AdminCommitteeDetailPage() {
                     {editingMemberId ? 'Edit Designation Assignment' : 'Assign Designation'}
                   </h2>
                   <p className="text-sm text-slate-500">
-                    Select an approved member and assign their JAS designation.
+                    Select an approved member and assign their JWAS designation.
                   </p>
                 </div>
               </div>
@@ -895,7 +895,7 @@ function MemberPicker({
               value={memberSearch}
               onChange={(event) => onSearchChange(event.target.value)}
               className={`${inputClass} pl-10`}
-              placeholder="Name, father name, mobile or JAS member no"
+              placeholder="Name, father name, mobile or JWAS member no"
             />
           </div>
           <button

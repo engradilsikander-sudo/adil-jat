@@ -7,7 +7,7 @@ type ProgramKey = 'education' | 'health' | 'welfare' | 'employment'
 const common = {
   en: {
     membershipVerification: '1. Membership Verification',
-    verifyMembershipText: 'Enter an approved JAS membership number before submitting the application.',
+    verifyMembershipText: 'Enter an approved JWAS membership number before submitting the application.',
     membershipPlaceholder: 'Membership No, e.g. JAS-2026-0001',
     verify: 'Verify',
     verified: 'Verified',
@@ -46,7 +46,7 @@ const common = {
   },
   ur: {
     membershipVerification: '1. ممبرشپ تصدیق',
-    verifyMembershipText: 'درخواست جمع کرانے سے پہلے منظور شدہ JAS ممبرشپ نمبر درج کریں۔',
+    verifyMembershipText: 'درخواست جمع کرانے سے پہلے منظور شدہ JWAS ممبرشپ نمبر درج کریں۔',
     membershipPlaceholder: 'ممبرشپ نمبر، مثال JAS-2026-0001',
     verify: 'تصدیق کریں',
     verified: 'تصدیق شدہ',
@@ -85,7 +85,7 @@ const common = {
   },
   sd: {
     membershipVerification: '1. ميمبرشپ تصديق',
-    verifyMembershipText: 'درخواست جمع ڪرائڻ کان اڳ منظور ٿيل JAS ميمبرشپ نمبر داخل ڪريو.',
+    verifyMembershipText: 'درخواست جمع ڪرائڻ کان اڳ منظور ٿيل JWAS ميمبرشپ نمبر داخل ڪريو.',
     membershipPlaceholder: 'ميمبرشپ نمبر، مثال JAS-2026-0001',
     verify: 'تصديق ڪريو',
     verified: 'تصديق ٿيل',
@@ -316,7 +316,7 @@ const programApplyCopy = {
       back: 'Back to Employment Program',
       badge: 'Employment Profile',
       title: 'Job seeker registration',
-      description: 'Approved JAS members can submit CV, skills, education and job preferences.',
+      description: 'Approved JWAS members can submit CV, skills, education and job preferences.',
       verifyMembership: '1. Verify Membership',
       educationLevel: 'Education Level',
       fieldOfStudy: 'Field of Study',
@@ -350,7 +350,7 @@ const programApplyCopy = {
       back: 'ایمپلائمنٹ پروگرام پر واپس',
       badge: 'روزگار پروفائل',
       title: 'جاب سیکر رجسٹریشن',
-      description: 'منظور شدہ JAS ممبران CV، اسکلز، تعلیم اور جاب ترجیحات جمع کرا سکتے ہیں۔',
+      description: 'منظور شدہ JWAS ممبران CV، اسکلز، تعلیم اور جاب ترجیحات جمع کرا سکتے ہیں۔',
       verifyMembership: '1. ممبرشپ تصدیق',
       educationLevel: 'تعلیمی سطح',
       fieldOfStudy: 'شعبہ تعلیم',
@@ -384,7 +384,7 @@ const programApplyCopy = {
       back: 'ايمپلائمنٽ پروگرام ڏانهن واپس',
       badge: 'روزگار پروفائل',
       title: 'جاب سيڪر رجسٽريشن',
-      description: 'منظور ٿيل JAS ميمبر CV، مهارتون، تعليم ۽ جاب ترجيحات جمع ڪرائي سگهن ٿا.',
+      description: 'منظور ٿيل JWAS ميمبر CV، مهارتون، تعليم ۽ جاب ترجيحات جمع ڪرائي سگهن ٿا.',
       verifyMembership: '1. ميمبرشپ تصديق',
       educationLevel: 'تعليمي سطح',
       fieldOfStudy: 'تعليم جو شعبو',

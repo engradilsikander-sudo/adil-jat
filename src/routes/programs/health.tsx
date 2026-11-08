@@ -24,7 +24,7 @@ export const Route = createFileRoute('/programs/health')({
 
 const copy = {
   en: {
-    badge: 'JAS Health & Medical Support',
+    badge: 'JWAS Health & Medical Support',
     title: 'Medical help requests with restricted health-admin review',
     description:
       'Apply for treatment, prescription, hospital estimate, lab report, medicine or emergency support through a membership-verified and privacy-first medical assistance workflow.',
@@ -152,7 +152,7 @@ const copy = {
     ],
   },
   sd: {
-    badge: 'JAS صحت ۽ طبي مدد',
+    badge: 'JWAS صحت ۽ طبي مدد',
     title: 'محدود هيلٿ ايڊمن جائزي سان طبي مدد جون درخواستون',
     description:
       'ميمبرشپ تصديق ٿيل ۽ پرائيويسي فرسٽ ورڪ فلو ذريعي علاج، نسخو، اسپتال تخمينو، ليب رپورٽ، دوائون يا ايمرجنسي مدد لاءِ درخواست ڏيو.',

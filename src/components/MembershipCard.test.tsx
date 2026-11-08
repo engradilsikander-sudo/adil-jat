@@ -24,6 +24,8 @@ describe('membership card rendering', () => {
     expect(html).toContain('example.org/verify/JAS-2026-1234')
     expect(html).toContain('JAS-2026-1234')
     expect(html).toContain('Approved member')
+    expect(html).toContain('JATT WELFARE ALLIANCE SINDH')
+    expect(html).not.toContain('JATT ALLIANCE SINDH')
   })
   it.each(['pending', 'rejected'] as const)('never labels a %s member as approved', (status) => {
     for (const side of ['front', 'back'] as const) {

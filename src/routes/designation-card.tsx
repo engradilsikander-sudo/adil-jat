@@ -16,7 +16,7 @@ function DesignationCardRedirectPage() {
     <main className="min-h-screen px-4 py-10">
       <div className="page-wrap rounded-3xl bg-white p-6 text-center shadow-sm ring-1 ring-slate-200">
         <p className="text-sm font-bold text-slate-600">
-          Office bearer designations now appear on the standard JAS membership card.
+          Office bearer designations now appear on the standard JWAS membership card.
         </p>
       </div>
     </main>

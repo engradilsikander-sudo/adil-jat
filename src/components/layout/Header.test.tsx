@@ -28,8 +28,8 @@ afterEach(cleanup)
 describe('institutional header', () => {
   it('shows the full brand and logged-out account actions', () => {
     mount()
-    expect(screen.getByText('Jatt Alliance Sindh')).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Join JAS' }).getAttribute('href')).toBe('/signup')
+    expect(screen.getByText('Jatt Welfare Alliance Sindh')).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Join JWAS' }).getAttribute('href')).toBe('/signup')
   })
   it('groups organization links and restores focus on Escape', () => {
     mount()
@@ -55,7 +55,7 @@ describe('institutional header', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Open navigation' }))
     const drawer = screen.getByRole('dialog')
     expect(document.body.style.overflow).toBe('hidden')
-    expect(within(drawer).getByRole('link', { name: 'Join JAS' })).toBeTruthy()
+    expect(within(drawer).getByRole('link', { name: 'Join JWAS' })).toBeTruthy()
     fireEvent.click(within(drawer).getAllByRole('button', { name: 'Close navigation' })[1])
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(document.body.style.overflow).toBe('')

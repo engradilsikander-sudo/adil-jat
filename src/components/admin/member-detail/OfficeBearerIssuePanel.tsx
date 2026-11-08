@@ -99,7 +99,7 @@ export function OfficeBearerIssuePanel({
           </h2>
           <p className="mt-1 max-w-3xl text-sm leading-6 text-slate-500">
             Select a level for this approved member. After saving, the
-            designation will appear on the standard JAS membership card and
+            designation will appear on the standard JWAS membership card and
             membership QR verification page.
           </p>
         </div>

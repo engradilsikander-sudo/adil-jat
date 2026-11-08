@@ -26,7 +26,7 @@ export function CaseReportPreview({ report, onClose }: { report: CaseReportData 
     const previousOverflow = document.body.style.overflow
     const previousTitle = document.title
     document.body.style.overflow = 'hidden'
-    document.title = report.type === 'health' ? 'JAS Health Case Report' : 'JAS Welfare Case Report'
+    document.title = report.type === 'health' ? 'JWAS Health Case Report' : 'JWAS Welfare Case Report'
     closeRef.current?.focus()
     function handleKeys(event: KeyboardEvent) {
       if (event.key === 'Escape') { event.preventDefault(); closeCallback.current() }

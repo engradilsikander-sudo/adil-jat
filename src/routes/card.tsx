@@ -102,7 +102,7 @@ const cardPageText: Record<AppLanguage, CardPageText> = {
     backDashboard: 'Back to Dashboard',
     eyebrow: 'Digital Member ID',
     title: 'Digital Membership Card',
-    description: 'Preview, verify and download your official Jatt Alliance Sindh digital membership card.',
+    description: 'Preview, verify and download your official Jatt Welfare Alliance Sindh digital membership card.',
     refresh: 'Refresh',
     summaryMember: 'Member',
     summaryStatus: 'Status',
@@ -155,7 +155,7 @@ const cardPageText: Record<AppLanguage, CardPageText> = {
     backDashboard: 'ڈیش بورڈ پر واپس',
     eyebrow: 'ڈیجیٹل ممبر آئی ڈی',
     title: 'ڈیجیٹل ممبرشپ کارڈ',
-    description: 'اپنا سرکاری جٹ الائنس سندھ ڈیجیٹل ممبرشپ کارڈ دیکھیں، تصدیق کریں اور ڈاؤن لوڈ کریں۔',
+    description: 'اپنا سرکاری جٹ ویلفیئر الائنس سندھ ڈیجیٹل ممبرشپ کارڈ دیکھیں، تصدیق کریں اور ڈاؤن لوڈ کریں۔',
     refresh: 'تازہ کریں',
     summaryMember: 'ممبر',
     summaryStatus: 'اسٹیٹس',
@@ -208,7 +208,7 @@ const cardPageText: Record<AppLanguage, CardPageText> = {
     backDashboard: 'ڊيش بورڊ ڏانهن واپس',
     eyebrow: 'ڊجيٽل ميمبر آءِ ڊي',
     title: 'ڊجيٽل ميمبرشپ ڪارڊ',
-    description: 'پنهنجو سرڪاري جٽ الائنس سنڌ ڊجيٽل ميمبرشپ ڪارڊ ڏسو، تصديق ڪريو ۽ ڊائون لوڊ ڪريو.',
+    description: 'پنهنجو سرڪاري جٽ ويلفيئر الائنس سنڌ ڊجيٽل ميمبرشپ ڪارڊ ڏسو، تصديق ڪريو ۽ ڊائون لوڊ ڪريو.',
     refresh: 'تازو ڪريو',
     summaryMember: 'ميمبر',
     summaryStatus: 'اسٽيٽس',
@@ -441,7 +441,7 @@ function CardPage() {
 
     await exportElementAsPng(
       targetRef.current,
-      `${member.member_no}-JAS-card-${side}.png`,
+      `${member.member_no}-JWAS-card-${side}.png`,
       {
         width: CARD_WIDTH,
         height: CARD_HEIGHT,

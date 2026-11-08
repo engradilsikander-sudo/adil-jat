@@ -77,7 +77,7 @@ export function getRankLabel(rank: number) {
   if (rank === 1) return "Top Donor";
   if (rank === 2) return "Major Supporter";
   if (rank === 3) return "Community Champion";
-  return "JAS Supporter";
+  return "JWAS Supporter";
 }
 
 export function buildDonationReferenceHint(memberNo?: string | null) {

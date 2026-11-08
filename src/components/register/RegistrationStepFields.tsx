@@ -484,7 +484,7 @@ export function RegistrationStepFields({
         />
         <span>
           I confirm that the provided information is true and authorize{' '}
-          <strong>Jatt Alliance Sindh</strong> to review it for membership
+          <strong>Jatt Welfare Alliance Sindh</strong> to review it for membership
           approval and digital card issuance.
         </span>
       </label>

@@ -71,7 +71,7 @@ function OfficeBearerVerificationPage() {
           <p className="text-sm font-black uppercase tracking-[0.22em] text-[#f6d56f]">
             Verifying Office Bearer Card
           </p>
-          <h1 className="mt-3 text-3xl font-black">Checking official JAS record...</h1>
+          <h1 className="mt-3 text-3xl font-black">Checking official JWAS record...</h1>
         </div>
       </main>
     )
@@ -103,7 +103,7 @@ function VerifiedOfficeBearer({
   const committeeName = formatOfficeBearerDisplayText(
     committee?.name || 'Committee record',
   )
-  const level = committee ? getCommitteeTypeLabel(committee.committee_type) : 'JAS Committee'
+  const level = committee ? getCommitteeTypeLabel(committee.committee_type) : 'JWAS Committee'
   const location = committee ? getCommitteeLocation(committee) : getSnapshotLocation(card)
   const validity = formatDesignationValidity(card)
   const expiryDate = formatDesignationExpiry(card)
@@ -121,7 +121,7 @@ function VerifiedOfficeBearer({
           className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-4 py-2 text-sm font-black text-white no-underline transition hover:bg-white/15"
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to JAS
+          Back to JWAS
         </Link>
 
         <section className="overflow-hidden rounded-[2.25rem] border border-[#f6d56f]/30 bg-white text-slate-950 shadow-2xl">
@@ -138,7 +138,7 @@ function VerifiedOfficeBearer({
                   <span className="block text-[#f6d56f]">Record Confirmed</span>
                 </h1>
                 <p className="mt-4 max-w-3xl text-sm leading-7 text-white/72 sm:text-base">
-                  This QR confirms that the bearer currently has a valid active JAS committee designation in the official public organization record.
+                  This QR confirms that the bearer currently has a valid active JWAS committee designation in the official public organization record.
                 </p>
               </div>
 
@@ -186,7 +186,7 @@ function VerifiedOfficeBearer({
               </p>
               <h3 className="mt-2 text-2xl font-black">Valid office bearer card</h3>
               <p className="mt-3 text-sm font-semibold leading-7 text-emerald-900/75">
-                The QR code links to a public JAS verification route. Accept this authority only while the status remains valid, the expiry date has not passed, and the committee details match the presented card.
+                The QR code links to a public JWAS verification route. Accept this authority only while the status remains valid, the expiry date has not passed, and the committee details match the presented card.
               </p>
 
               <div className="mt-5 rounded-3xl bg-white p-4 shadow-sm ring-1 ring-emerald-100">

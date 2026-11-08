@@ -97,7 +97,7 @@ describe('finance helpers', () => {
     } as FinanceDonation
 
     const receipt = buildDonationReceiptText(donation)
-    expect(receipt).toContain('Jatt Alliance Sindh (JAS)')
+    expect(receipt).toContain('Jatt Welfare Alliance Sindh (JWAS)')
     expect(receipt).toContain('Easypaisa')
     expect(receipt).toContain('General Fund')
     expect(receipt).toContain('Approved')

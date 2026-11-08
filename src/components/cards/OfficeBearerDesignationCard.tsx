@@ -302,7 +302,7 @@ const OfficeBearerCardFront = forwardRef<HTMLDivElement, {
   const location = committee ? getCommitteeLocation(committee) : getSnapshotLocation(card)
   const validity = formatDesignationValidity(card)
   const expiryDate = formatDesignationExpiry(card)
-  const level = committee ? getCommitteeTypeLabel(committee.committee_type) : 'JAS Committee'
+  const level = committee ? getCommitteeTypeLabel(committee.committee_type) : 'JWAS Committee'
   return (
     <div
       ref={ref}
@@ -314,10 +314,10 @@ const OfficeBearerCardFront = forwardRef<HTMLDivElement, {
         <div className="flex items-start justify-between gap-6">
           <div className="flex items-center gap-5">
             <div className="relative flex h-[100px] w-[100px] items-center justify-center rounded-[28px] border border-[#f6d56f]/50 bg-white p-2 shadow-[0_16px_40px_rgba(0,0,0,0.28)]">
-              <img src={JAS_LOGO_PATH} alt="JAS" className="h-full w-full rounded-[22px] object-cover object-top" draggable={false} />
+              <img src={JAS_LOGO_PATH} alt="JWAS" className="h-full w-full rounded-[22px] object-cover object-top" draggable={false} />
             </div>
             <div>
-              <p className="text-[18px] font-black uppercase tracking-[0.42em] text-[#f6d56f]">Jatt Alliance Sindh</p>
+              <p className="text-[18px] font-black uppercase tracking-[0.42em] text-[#f6d56f]">Jatt Welfare Alliance Sindh</p>
               <h3 className="mt-3 text-[56px] font-black uppercase leading-[0.88] tracking-[-0.06em]">Office Bearer</h3>
               <p className="mt-3 text-[19px] font-black uppercase tracking-[0.18em] text-white/70">Official designation authority card</p>
             </div>
@@ -363,7 +363,7 @@ const OfficeBearerCardFront = forwardRef<HTMLDivElement, {
 
             <div className="mt-5 rounded-[22px] border border-[#f6d56f]/30 bg-[#f6d56f]/10 px-5 py-3.5">
               <p className="text-[12px] font-black uppercase tracking-[0.18em] text-[#f6d56f]">Authority note</p>
-              <p className="mt-1 text-[14px] font-bold leading-5 text-white/72">This authority card is valid only with an active JAS committee designation.</p>
+              <p className="mt-1 text-[14px] font-bold leading-5 text-white/72">This authority card is valid only with an active JWAS committee designation.</p>
             </div>
           </div>
 
@@ -431,11 +431,11 @@ const OfficeBearerCardBack = forwardRef<HTMLDivElement, {
         <div className="flex items-start justify-between gap-5 border-b-4 border-[#d5ad44] pb-4">
           <div className="flex items-center gap-5">
             <div className="flex h-[74px] w-[74px] items-center justify-center rounded-[22px] bg-[#06130f] p-1.5 shadow-xl">
-              <img src={JAS_LOGO_PATH} alt="JAS" className="h-full w-full rounded-[18px] object-cover object-top" draggable={false} />
+              <img src={JAS_LOGO_PATH} alt="JWAS" className="h-full w-full rounded-[18px] object-cover object-top" draggable={false} />
             </div>
             <div>
               <p className="text-[12px] font-black uppercase tracking-[0.32em] text-emerald-800">Issuing Authority</p>
-              <h3 className="mt-1 text-[33px] font-black uppercase tracking-[-0.01em] text-slate-950">Jatt Alliance Sindh</h3>
+              <h3 className="mt-1 text-[33px] font-black uppercase tracking-[-0.01em] text-slate-950">Jatt Welfare Alliance Sindh</h3>
               <p className="mt-0.5 text-[14px] font-bold text-slate-500">Office bearer verification, authority and conditions</p>
             </div>
           </div>
@@ -477,7 +477,7 @@ const OfficeBearerCardBack = forwardRef<HTMLDivElement, {
                 </div>
                 <div className="mt-2 h-[2px] w-full bg-slate-500" />
                 <p className="mt-2 text-[13px] font-black text-slate-950">Authorized Signature</p>
-                <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">JAS Central Office</p>
+                <p className="mt-0.5 text-[10px] font-black uppercase tracking-[0.12em] text-slate-500">JWAS Central Office</p>
               </div>
             </div>
           </div>
@@ -499,7 +499,7 @@ const OfficeBearerCardBack = forwardRef<HTMLDivElement, {
 
             <div className="rounded-[22px] border border-[#f6d56f]/40 bg-[#f6d56f] p-3.5 text-emerald-950">
               <p className="text-[11px] font-black uppercase tracking-[0.18em]">Issuing Organization</p>
-              <p className="mt-1.5 text-[17px] font-black leading-tight">Jatt Alliance Sindh</p>
+              <p className="mt-1.5 text-[17px] font-black leading-tight">Jatt Welfare Alliance Sindh</p>
               <p className="mt-0.5 text-[12px] font-bold opacity-75">Sindh, Pakistan</p>
             </div>
 

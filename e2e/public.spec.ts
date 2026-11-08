@@ -82,3 +82,27 @@ test('landing and login remain usable without horizontal overflow', async ({ pag
   await expect(page.locator('#email')).toBeVisible()
   await expect(page.locator('#password')).toBeVisible()
 })
+
+
+test('JWAS public identity, footer, QR and social metadata are consistent', async ({ page, request }) => {
+  await page.goto('/')
+  await expect(page.locator('.welcome-brand')).toHaveAccessibleName('Jatt Welfare Alliance Sindh')
+  await expect(page.locator('.welcome-brand strong')).toHaveText('Jatt Welfare Alliance Sindh')
+  await expect(page.locator('.welcome-footer')).toContainText('Jatt Welfare Alliance Sindh')
+  await expect(page.locator('.welcome-footer')).toContainText('©')
+  await expect(page.locator('.welcome-tagline')).toHaveText('Education · Health · Dignity')
+  await expect(page).toHaveTitle('Jatt Welfare Alliance Sindh | Member & Programs Portal')
+  for (const selector of ['meta[name="description"]', 'meta[property="og:title"]', 'meta[property="og:description"]', 'meta[name="twitter:title"]', 'meta[name="twitter:description"]']) {
+    await expect(page.locator(selector)).toHaveAttribute('content', /Jatt Welfare Alliance Sindh/)
+  }
+  const manifest = await (await request.get('/manifest.json')).json()
+  expect(manifest.name).toBe('Jatt Welfare Alliance Sindh')
+  expect(manifest.short_name).toBe('JWAS')
+  await page.screenshot({ path: '/tmp/jwas-b1-home.png', fullPage: true })
+  await page.goto('/verify/INVALID')
+  await expect(page.getByText('Jatt Welfare Alliance Sindh', { exact: true }).first()).toBeVisible()
+  await expect(page.locator('body')).toContainText('JAS-YYYY-0001') // existing issued-number contract
+  await page.goto('/login')
+  await expect(page.locator('.jas-nav-brand strong')).toHaveText('Jatt Welfare Alliance Sindh')
+  await expect(page.locator('.jas-nav-brand small')).toHaveText('Education · Health · Dignity')
+})

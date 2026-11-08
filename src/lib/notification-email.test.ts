@@ -73,7 +73,7 @@ describe('notification email helpers', () => {
     })
 
     expect(rendered.htmlContent).toContain('dir="rtl"')
-    expect(rendered.subject).toBe('[JAS] ممبرشپ منظور ہو گئی')
+    expect(rendered.subject).toBe('[JWAS] ممبرشپ منظور ہو گئی')
   })
 
   it('removes control characters and limits text length', () => {

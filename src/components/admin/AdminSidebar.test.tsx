@@ -193,3 +193,11 @@ it('group icons and collapse labels are localized without bypassing permissions'
     page.unmount()
   }
 })
+
+
+it('brands the UX.14 expanded sidebar without changing its collapse control', () => {
+  render(<AdminSidebar />)
+  expect(screen.getByText('JWAS Admin Panel')).toBeTruthy()
+  expect(screen.getByText('JWAS Management Console')).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Collapse sidebar' })).toBeTruthy()
+})

@@ -1,3 +1,4 @@
+import { BRAND } from '../../lib/branding'
 import { Link, useNavigate, useRouterState } from '@tanstack/react-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Check, ChevronDown, Globe2, LogOut, Menu, ShieldCheck, Users, X } from 'lucide-react'
@@ -10,7 +11,7 @@ import { headerDataCopy } from '../../lib/header-data-copy'
 
 type OpenMenu = 'programs' | 'organization' | 'language' | 'account' | null
 const copy = {
-  en: { governance: 'Governance', community: 'Community', navigation: 'Main navigation', open: 'Open navigation', close: 'Close navigation', account: 'Member account', member: 'Member', memberNo: 'Membership number', holders: 'Office bearers across organization levels', join: 'Join JAS' },
+  en: { governance: 'Governance', community: 'Community', navigation: 'Main navigation', open: 'Open navigation', close: 'Close navigation', account: 'Member account', member: 'Member', memberNo: 'Membership number', holders: 'Office bearers across organization levels', join: 'Join JWAS' },
   ur: { governance: 'نظم و نسق', community: 'برادری', navigation: 'مرکزی مینو', open: 'مینو کھولیں', close: 'مینو بند کریں', account: 'رکن کا اکاؤنٹ', member: 'رکن', memberNo: 'رکنیت نمبر', holders: 'تنظیمی سطحوں کے عہدیداران', join: 'رکن بنیں' },
   sd: { governance: 'انتظام', community: 'برادري', navigation: 'مکيه مينيو', open: 'مينيو کوليو', close: 'مينيو بند ڪريو', account: 'ميمبر جو اڪائونٽ', member: 'ميمبر', memberNo: 'ميمبرشپ نمبر', holders: 'تنظيمي سطحن جا عهديدار', join: 'ميمبر ٿيو' },
 }
@@ -89,7 +90,7 @@ export function Header({ compact: _compact }: { compact: boolean }) {
   async function handleLogout() { if (await logout()) { close(); await navigate({ to: '/login', replace: true }) } }
 
   function brand() {
-    return <Link to="/" className="jas-nav-brand" onClick={close}><img src="/jas/logo.jpeg" alt="" width={46} height={46} /><span><strong>{t('brand.name')}</strong><small lang="en" dir="ltr">Education · Health · Dignity</small></span></Link>
+    return <Link to="/" className="jas-nav-brand" onClick={close}><img src="/jas/logo.jpeg" alt="" width={46} height={46} /><span><strong>{t('brand.name')}</strong><small lang="en" dir="ltr">{BRAND.tagline}</small></span></Link>
   }
   function routeLink(to: string, label: string, className = 'jas-nav-link') {
     return <Link to={to} onClick={close} className={`${className}${active(to) ? ' is-active' : ''}`} aria-current={active(to) ? 'page' : undefined}>{label}</Link>

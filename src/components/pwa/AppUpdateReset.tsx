@@ -93,7 +93,7 @@ export function AppUpdateReset() {
         <p className="jas-app-reset__eyebrow">App update</p>
         <p className="jas-app-reset__text">
           {isSuccess
-            ? 'Latest app files loaded successfully. You can continue using the JAS portal.'
+            ? 'Latest app files loaded successfully. You can continue using the JWAS portal.'
             : 'Loading stuck or old version? Use this fallback to clear app cache and reload latest files.'}
         </p>
       </div>

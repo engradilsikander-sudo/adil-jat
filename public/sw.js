@@ -239,18 +239,18 @@ self.addEventListener('push', (event) => {
       payload = event.data.json()
     } catch {
       payload = {
-        title: 'JAS Update',
+        title: 'JWAS Update',
         body: event.data.text(),
       }
     }
   }
 
-  const title = payload.title || 'JAS Update'
+  const title = payload.title || 'JWAS Update'
   const options = {
     body:
       payload.body ||
       payload.message ||
-      'You have a new update in the JAS member portal.',
+      'You have a new update in the JWAS member portal.',
     icon: payload.icon || '/icon-192.png',
     badge: payload.badge || '/icon-192.png',
     tag: payload.tag || payload.notification_id || 'jas-update',

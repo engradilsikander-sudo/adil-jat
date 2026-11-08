@@ -49,7 +49,7 @@ export const MEMBER_CARD_CSV_HEADERS = [
   'Taluka',
   'Profession',
   'Caste / Branch',
-  'JAS Designation',
+  'JWAS Designation',
   'Designation Level',
   'Designation Area / Jurisdiction',
   'Committee Name',

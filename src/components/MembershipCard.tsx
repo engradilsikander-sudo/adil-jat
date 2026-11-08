@@ -1,3 +1,4 @@
+import { BRAND } from '../lib/branding'
 import type { CSSProperties, ReactNode } from 'react'
 import { getMemberDesignationTitle, type MemberCardDesignation } from '../lib/member-card-designation'
 import { buildMemberCardIssueLabel } from '../lib/member-card-config'
@@ -78,11 +79,11 @@ function CardHeader({ member, logoUrl, back }: { member: MembershipCardMember; l
     <header style={{ height: 132, flexShrink: 0, boxSizing: 'border-box', padding: '24px 32px', background: NAVY, borderBottom: `5px solid ${TEAL}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 24, color: '#ffffff' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 20, minWidth: 0 }}>
         {logoUrl
-          ? <img src={logoUrl} alt="Jatt Alliance Sindh logo" draggable={false} style={{ width: 76, height: 76, flexShrink: 0, borderRadius: '50%', objectFit: 'contain', background: '#ffffff' }} />
-          : <span style={{ width: 76, height: 76, display: 'grid', placeItems: 'center', flexShrink: 0, borderRadius: '50%', border: '2px solid #87d7df', fontSize: 25, fontWeight: 800 }}>JAS</span>}
+          ? <img src={logoUrl} alt="Jatt Welfare Alliance Sindh logo" draggable={false} style={{ width: 76, height: 76, flexShrink: 0, borderRadius: '50%', objectFit: 'contain', background: '#ffffff' }} />
+          : <span style={{ width: 76, height: 76, display: 'grid', placeItems: 'center', flexShrink: 0, borderRadius: '50%', border: '2px solid #87d7df', fontSize: 25, fontWeight: 800 }}>{BRAND.shortName}</span>}
         <div>
-          <h2 style={{ margin: 0, fontSize: 33, fontWeight: 800, letterSpacing: .5, lineHeight: 1.15 }}>JATT ALLIANCE SINDH</h2>
-          <p style={{ margin: '9px 0 0', color: '#aee1e7', fontSize: 16, fontWeight: 600, letterSpacing: 1.2 }}>Education · Health · Dignity</p>
+          <h2 style={{ margin: 0, fontSize: 33, fontWeight: 800, letterSpacing: .5, lineHeight: 1.15 }}>{BRAND.name.toUpperCase()}</h2>
+          <p style={{ margin: '9px 0 0', color: '#aee1e7', fontSize: 16, fontWeight: 600, letterSpacing: 1.2 }}>{BRAND.tagline}</p>
         </div>
       </div>
       <div style={{ textAlign: 'right', flexShrink: 0 }}>
@@ -127,7 +128,7 @@ function CardFront({ member, photoUrl, qrUrl, verifyUrl }: Pick<MembershipCardPr
         </div>
         <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, color: MUTED }}>
           <span style={{ width: 4, alignSelf: 'stretch', flexShrink: 0, background: TEAL, borderRadius: 2 }} />
-          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7 }}>This card identifies the named JAS member. Scan the QR code to confirm the current membership record.</p>
+          <p style={{ margin: 0, fontSize: 14, lineHeight: 1.7 }}>This card identifies the named JWAS member. Scan the QR code to confirm the current membership record.</p>
         </div>
       </section>
       <aside style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 18, borderLeft: `1px solid ${LINE}`, paddingLeft: 20, minWidth: 0 }}>
@@ -171,7 +172,7 @@ function CardBack({ member, qrUrl, verifyUrl }: Pick<MembershipCardProps, 'membe
         <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 24, minHeight: 0 }}>
           <Panel title="Cardholder guidance">
             <ul style={{ margin: '10px 0 0', paddingLeft: 17, fontSize: 13, color: MUTED, lineHeight: 1.65, listStyle: 'disc' }}>
-              <li>This card remains the property of Jatt Alliance Sindh.</li>
+              <li>This card remains the property of Jatt Welfare Alliance Sindh.</li>
               <li>Misuse, alteration or transfer is prohibited.</li>
               <li>Match the name, member number and approval status with the live verification record.</li>
             </ul>
@@ -200,8 +201,8 @@ function CardBack({ member, qrUrl, verifyUrl }: Pick<MembershipCardProps, 'membe
           <p style={{ margin: '6px 0 0', fontSize: 12, lineHeight: 1.6, overflowWrap: 'anywhere' }}>{displayVerifyUrl(verifyUrl)}</p>
         </div>
         <div style={{ paddingTop: 14, borderTop: '1px solid #cadfe5' }}>
-          <p style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Jatt Alliance Sindh</p>
-          <p style={{ margin: '4px 0 0', color: TEAL, fontSize: 12 }}>Education · Health · Dignity</p>
+          <p style={{ margin: 0, fontSize: 15, fontWeight: 700 }}>Jatt Welfare Alliance Sindh</p>
+          <p style={{ margin: '4px 0 0', color: TEAL, fontSize: 12 }}>{BRAND.tagline}</p>
         </div>
       </aside>
     </div>

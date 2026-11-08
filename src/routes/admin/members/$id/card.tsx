@@ -226,7 +226,7 @@ function AdminMemberCardPage() {
 
     await exportElementAsPng(
       targetRef.current,
-      `${member.member_no}-JAS-card-${side}.png`,
+      `${member.member_no}-JWAS-card-${side}.png`,
       {
         width: CARD_WIDTH,
         height: CARD_HEIGHT,

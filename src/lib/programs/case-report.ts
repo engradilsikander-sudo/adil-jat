@@ -40,9 +40,9 @@ export function createHealthCaseReport(
   generatedAt = new Date().toLocaleString(),
 ): CaseReportData {
   return {
-    type: 'health', title: 'Jatt Alliance Sindh — Health Case Report',
+    type: 'health', title: 'Jatt Welfare Alliance Sindh — Health Case Report',
     reference: str(app.application_no || app.id), generatedAt,
-    confidential: 'Restricted medical information. Share only with authorized JAS health committee/admin users.',
+    confidential: 'Restricted medical information. Share only with authorized JWAS health committee/admin users.',
     fields: [
       ['Case No', str(app.application_no || app.id)],
       ['Patient Name', str(app.applicant_name)], ['Membership No', str(app.membership_no)],
@@ -75,9 +75,9 @@ export function createWelfareCaseReport(
   generatedAt = new Date().toLocaleString(),
 ): CaseReportData {
   return {
-    type: 'welfare', title: `JAS ${labels.badge} Close Report`,
+    type: 'welfare', title: `JWAS ${labels.badge} Close Report`,
     reference: str(app.application_no || app.id), generatedAt,
-    confidential: 'Confidential welfare case information. Share only with authorized JAS staff.',
+    confidential: 'Confidential welfare case information. Share only with authorized JWAS staff.',
     fields: [
       [labels.applicantName, str(app.applicant_name)],
       [labels.membershipNo, str(app.membership_no)],

@@ -22,7 +22,7 @@ export const Route = createFileRoute('/programs/welfare')({
 const copy = {
   en: {
     badge: 'Welfare Case Management',
-    title: 'JAS Welfare Support Cases',
+    title: 'JWAS Welfare Support Cases',
     description:
       'A transparent case workflow for financial help, ration support, widow/orphan support, emergency help, marriage support, disaster relief, legal help and family support.',
     applyCta: 'Apply Now',
@@ -104,7 +104,7 @@ const copy = {
   },
   sd: {
     badge: 'ويلفيئر ڪيس مينيجمينٽ',
-    title: 'JAS ويلفيئر سپورٽ ڪيسز',
+    title: 'JWAS ويلفيئر سپورٽ ڪيسز',
     description:
       'مالي مدد، راشن سپورٽ، بيواهه/يتيم سپورٽ، ايمرجنسي مدد، شادي سپورٽ، آفت رليف، قانوني مدد ۽ خانداني سپورٽ لاءِ شفاف ڪيس ورڪ فلو.',
     applyCta: 'هاڻي درخواست ڏيو',

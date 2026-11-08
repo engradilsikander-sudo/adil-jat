@@ -208,7 +208,7 @@ serve(async (request) => {
           typeof userResult.user?.user_metadata?.full_name === 'string'
             ? userResult.user.user_metadata.full_name
             : null
-        const recipientName = member?.full_name || metadataName || 'JAS Member'
+        const recipientName = member?.full_name || metadataName || 'JWAS Member'
         const content = renderNotificationEmail({
           recipientName,
           title: job.title,

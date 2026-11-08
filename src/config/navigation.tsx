@@ -44,7 +44,7 @@ export const adminRoleNames = [
 export const publicPageItems: PublicPageItem[] = [
   {
     to: '/about',
-    label: 'About JAS',
+    label: 'About JWAS',
     icon: <ShieldCheck size={16} />,
     description: 'Introduction, purpose and community platform overview',
   },
@@ -52,7 +52,7 @@ export const publicPageItems: PublicPageItem[] = [
     to: '/vision-mission',
     label: 'Vision & Mission',
     icon: <Landmark size={16} />,
-    description: 'JAS vision, mission and service direction',
+    description: 'JWAS vision, mission and service direction',
   },
   {
     to: '/manifesto',

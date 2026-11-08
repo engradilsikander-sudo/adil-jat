@@ -1,3 +1,4 @@
+import { BRAND } from '../../lib/branding'
 import { useEffect, useId, useState, type ReactNode } from 'react'
 import { useFinanceAccess } from '../../lib/use-finance-access'
 import { useI18n, type AppLanguage } from '../../lib/i18n'
@@ -92,11 +93,11 @@ export function AdminSidebar({
     >
       {!mobile ? (
         <div className="admin-sidebar-brand">
-          <span className="admin-sidebar-brand-icon">JAS</span>
+          <span className="admin-sidebar-brand-icon">{BRAND.shortName}</span>
           {!iconRail ? (
             <span className="admin-sidebar-brand-copy">
-              <strong>{translate('Admin Panel')}</strong>
-              <small>{translate('Management Console')}</small>
+              <strong>{BRAND.shortName} {translate('Admin Panel')}</strong>
+              <small>{BRAND.shortName} {translate('Management Console')}</small>
             </span>
           ) : null}
           <button

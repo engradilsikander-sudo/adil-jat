@@ -14,12 +14,12 @@ type CmsFallbackCopy = {
 const cmsFallbacks: Record<AppLanguage, Record<CmsPageSlug, CmsFallbackCopy>> = {
   en: {
     about: {
-      eyebrow: 'About JAS',
-      title: 'About Jatt Alliance Sindh',
+      eyebrow: 'About JWAS',
+      title: 'About Jatt Welfare Alliance Sindh',
       subtitle:
         'A non-political, welfare-focused and member-verified community platform for Jatt families across Sindh.',
       content:
-        'Jatt Alliance Sindh (JAS) is a community welfare platform created to organize membership, education support, health assistance, welfare cases, employment support, donations and verified public service records.\n\nThe organization is designed to work through transparent membership verification, responsible admin review, district/taluka coordination and digital records.\n\nThis page can be updated from the Admin CMS panel.',
+        'Jatt Welfare Alliance Sindh (JWAS) is a community welfare platform created to organize membership, education support, health assistance, welfare cases, employment support, donations and verified public service records.\n\nThe organization is designed to work through transparent membership verification, responsible admin review, district/taluka coordination and digital records.\n\nThis page can be updated from the Admin CMS panel.',
     },
     'vision-mission': {
       eyebrow: 'Vision & Mission',
@@ -33,17 +33,17 @@ const cmsFallbacks: Record<AppLanguage, Record<CmsPageSlug, CmsFallbackCopy>> = 
       eyebrow: 'Manifesto / Manshoor',
       title: 'Manifesto / Manshoor',
       subtitle:
-        'The guiding principles and public commitment of Jatt Alliance Sindh.',
+        'The guiding principles and public commitment of Jatt Welfare Alliance Sindh.',
       content:
-        'Jatt Alliance Sindh works for education, health, employment, welfare, social support, representation, unity, dignity and service.\n\nCore manifesto points include:\n- Education support and scholarships\n- Health assistance and emergency help\n- Employment and skills support\n- Welfare cases for deserving families\n- Transparent donations and finance records\n- Community unity and verified membership\n\nThis page can be updated from the Admin CMS panel.',
+        'Jatt Welfare Alliance Sindh works for education, health, employment, welfare, social support, representation, unity, dignity and service.\n\nCore manifesto points include:\n- Education support and scholarships\n- Health assistance and emergency help\n- Employment and skills support\n- Welfare cases for deserving families\n- Transparent donations and finance records\n- Community unity and verified membership\n\nThis page can be updated from the Admin CMS panel.',
     },
     constitution: {
       eyebrow: 'Constitution',
-      title: 'JAS Constitution',
+      title: 'JWAS Constitution',
       subtitle:
-        'The constitutional structure, roles, responsibilities and organizational rules of JAS.',
+        'The constitutional structure, roles, responsibilities and organizational rules of JWAS.',
       content:
-        'The constitution defines JAS membership, organizational structure, Central Executive Committee, Central Advisory Committee, provincial, divisional, district and taluka units, duties of office bearers, program management, finance rules, discipline, records and reporting.\n\nCurrent hierarchy:\nCEC → Advisory → Provincial → Divisional → District → Taluka\n\nThis page can be updated from the Admin CMS panel.',
+        'The constitution defines JWAS membership, organizational structure, Central Executive Committee, Central Advisory Committee, provincial, divisional, district and taluka units, duties of office bearers, program management, finance rules, discipline, records and reporting.\n\nCurrent hierarchy:\nCEC → Advisory → Provincial → Divisional → District → Taluka\n\nThis page can be updated from the Admin CMS panel.',
     },
     cwc: {
       eyebrow: 'Central Working Committee',
@@ -51,11 +51,11 @@ const cmsFallbacks: Record<AppLanguage, Record<CmsPageSlug, CmsFallbackCopy>> = 
       subtitle:
         'The top-level governing and executive body responsible for day-to-day decisions and policy implementation.',
       content:
-        'The Central Working Committee (CWC) is the top-level governing and executive body of Jatt Alliance Sindh.\n\nCentral Cabinet designations include:\n- Chairman\n- Senior Vice Chairman\n- Vice Chairman\n- General Secretary\n- Information Secretary\n\nAdditional committees, wings and advisory boards may be created as needed.\n\nThis page can be updated from the Admin CMS panel.',
+        'The Central Working Committee (CWC) is the top-level governing and executive body of Jatt Welfare Alliance Sindh.\n\nCentral Cabinet designations include:\n- Chairman\n- Senior Vice Chairman\n- Vice Chairman\n- General Secretary\n- Information Secretary\n\nAdditional committees, wings and advisory boards may be created as needed.\n\nThis page can be updated from the Admin CMS panel.',
     },
     contact: {
       eyebrow: 'Contact',
-      title: 'Contact Jatt Alliance Sindh',
+      title: 'Contact Jatt Welfare Alliance Sindh',
       subtitle:
         'For membership, program support, donations, verification and committee coordination.',
       content:
@@ -65,11 +65,11 @@ const cmsFallbacks: Record<AppLanguage, Record<CmsPageSlug, CmsFallbackCopy>> = 
   ur: {
     about: {
       eyebrow: 'جے اے ایس کے بارے میں',
-      title: 'جٹ الائنس سندھ کا تعارف',
+      title: 'جٹ ویلفیئر الائنس سندھ کا تعارف',
       subtitle:
         'سندھ بھر کے جٹ خاندانوں کے لیے غیر سیاسی، فلاحی اور ممبرشپ سے تصدیق شدہ کمیونٹی پلیٹ فارم۔',
       content:
-        'جٹ الائنس سندھ (JAS) ایک کمیونٹی فلاحی پلیٹ فارم ہے جو ممبرشپ، تعلیم، صحت، ویلفیئر کیسز، روزگار، عطیات اور تصدیق شدہ عوامی ریکارڈ کو منظم کرنے کے لیے بنایا گیا ہے۔\n\nتنظیم شفاف ممبرشپ تصدیق، ذمہ دار ایڈمن جائزہ، ڈویژن، ضلع اور تعلقہ سطح کی کوآرڈینیشن اور ڈیجیٹل ریکارڈ کے ذریعے کام کرے گی۔\n\nیہ صفحہ Admin CMS Panel سے اپڈیٹ کیا جا سکتا ہے۔',
+        'جٹ ویلفیئر الائنس سندھ (JWAS) ایک کمیونٹی فلاحی پلیٹ فارم ہے جو ممبرشپ، تعلیم، صحت، ویلفیئر کیسز، روزگار، عطیات اور تصدیق شدہ عوامی ریکارڈ کو منظم کرنے کے لیے بنایا گیا ہے۔\n\nتنظیم شفاف ممبرشپ تصدیق، ذمہ دار ایڈمن جائزہ، ڈویژن، ضلع اور تعلقہ سطح کی کوآرڈینیشن اور ڈیجیٹل ریکارڈ کے ذریعے کام کرے گی۔\n\nیہ صفحہ Admin CMS Panel سے اپڈیٹ کیا جا سکتا ہے۔',
     },
     'vision-mission': {
       eyebrow: 'وژن اور مشن',
@@ -83,9 +83,9 @@ const cmsFallbacks: Record<AppLanguage, Record<CmsPageSlug, CmsFallbackCopy>> = 
       eyebrow: 'منشور',
       title: 'منشور / Manshoor',
       subtitle:
-        'جٹ الائنس سندھ کے رہنما اصول اور عوامی عہد۔',
+        'جٹ ویلفیئر الائنس سندھ کے رہنما اصول اور عوامی عہد۔',
       content:
-        'جٹ الائنس سندھ تعلیم، صحت، روزگار، ویلفیئر، سماجی مدد، نمائندگی، اتحاد، وقار اور خدمت کے لیے کام کرے گی۔\n\nمنشور کے اہم نکات:\n- تعلیم سپورٹ اور اسکالرشپس\n- صحت مدد اور ایمرجنسی سپورٹ\n- روزگار اور اسکلز سپورٹ\n- مستحق خاندانوں کے لیے ویلفیئر کیسز\n- شفاف عطیات اور مالی ریکارڈ\n- کمیونٹی اتحاد اور تصدیق شدہ ممبرشپ\n\nیہ صفحہ Admin CMS Panel سے اپڈیٹ کیا جا سکتا ہے۔',
+        'جٹ ویلفیئر الائنس سندھ تعلیم، صحت، روزگار، ویلفیئر، سماجی مدد، نمائندگی، اتحاد، وقار اور خدمت کے لیے کام کرے گی۔\n\nمنشور کے اہم نکات:\n- تعلیم سپورٹ اور اسکالرشپس\n- صحت مدد اور ایمرجنسی سپورٹ\n- روزگار اور اسکلز سپورٹ\n- مستحق خاندانوں کے لیے ویلفیئر کیسز\n- شفاف عطیات اور مالی ریکارڈ\n- کمیونٹی اتحاد اور تصدیق شدہ ممبرشپ\n\nیہ صفحہ Admin CMS Panel سے اپڈیٹ کیا جا سکتا ہے۔',
     },
     constitution: {
       eyebrow: 'آئین',
@@ -101,11 +101,11 @@ const cmsFallbacks: Record<AppLanguage, Record<CmsPageSlug, CmsFallbackCopy>> = 
       subtitle:
         'روزمرہ فیصلوں اور پالیسی عملدرآمد کی ذمہ دار اعلیٰ سطحی گورننگ اور ایگزیکٹو باڈی۔',
       content:
-        'مرکزی ورکنگ کمیٹی (CWC) جٹ الائنس سندھ کی اعلیٰ سطحی گورننگ اور ایگزیکٹو باڈی ہے۔\n\nمرکزی کابینہ کے عہدے:\n- چیئرمین\n- سینئر وائس چیئرمین\n- وائس چیئرمین\n- جنرل سیکریٹری\n- انفارمیشن سیکریٹری\n\nضرورت کے مطابق اضافی کمیٹیاں، ونگز اور ایڈوائزری بورڈز بنائے جا سکتے ہیں۔\n\nیہ صفحہ Admin CMS Panel سے اپڈیٹ کیا جا سکتا ہے۔',
+        'مرکزی ورکنگ کمیٹی (CWC) جٹ ویلفیئر الائنس سندھ کی اعلیٰ سطحی گورننگ اور ایگزیکٹو باڈی ہے۔\n\nمرکزی کابینہ کے عہدے:\n- چیئرمین\n- سینئر وائس چیئرمین\n- وائس چیئرمین\n- جنرل سیکریٹری\n- انفارمیشن سیکریٹری\n\nضرورت کے مطابق اضافی کمیٹیاں، ونگز اور ایڈوائزری بورڈز بنائے جا سکتے ہیں۔\n\nیہ صفحہ Admin CMS Panel سے اپڈیٹ کیا جا سکتا ہے۔',
     },
     contact: {
       eyebrow: 'رابطہ',
-      title: 'جٹ الائنس سندھ سے رابطہ',
+      title: 'جٹ ویلفیئر الائنس سندھ سے رابطہ',
       subtitle:
         'ممبرشپ، پروگرام سپورٹ، عطیات، تصدیق اور کمیٹی کوآرڈینیشن کے لیے۔',
       content:
@@ -114,12 +114,12 @@ const cmsFallbacks: Record<AppLanguage, Record<CmsPageSlug, CmsFallbackCopy>> = 
   },
   sd: {
     about: {
-      eyebrow: 'JAS بابت',
-      title: 'جٽ الائنس سنڌ جو تعارف',
+      eyebrow: 'JWAS بابت',
+      title: 'جٽ ويلفيئر الائنس سنڌ جو تعارف',
       subtitle:
         'سنڌ جي جٽ خاندانن لاءِ غير سياسي، فلاحي ۽ ميمبرشپ تصديق ٿيل ڪميونٽي پليٽ فارم.',
       content:
-        'جٽ الائنس سنڌ (JAS) هڪ ڪميونٽي فلاحي پليٽ فارم آهي، جيڪو ميمبرشپ، تعليم، صحت، ويلفيئر ڪيسز، روزگار، عطيا ۽ تصديق ٿيل عوامي رڪارڊ کي منظم ڪرڻ لاءِ ٺاهيو ويو آهي۔\n\nتنظيم شفاف ميمبرشپ تصديق، ذميوار ايڊمن جائزي، ڊويزن، ضلع ۽ تعلقي سطح جي ڪوآرڊينيشن ۽ ڊجيٽل رڪارڊ ذريعي ڪم ڪندي۔\n\nهي صفحو Admin CMS Panel مان اپڊيٽ ڪري سگهجي ٿو.',
+        'جٽ ويلفيئر الائنس سنڌ (JWAS) هڪ ڪميونٽي فلاحي پليٽ فارم آهي، جيڪو ميمبرشپ، تعليم، صحت، ويلفيئر ڪيسز، روزگار، عطيا ۽ تصديق ٿيل عوامي رڪارڊ کي منظم ڪرڻ لاءِ ٺاهيو ويو آهي۔\n\nتنظيم شفاف ميمبرشپ تصديق، ذميوار ايڊمن جائزي، ڊويزن، ضلع ۽ تعلقي سطح جي ڪوآرڊينيشن ۽ ڊجيٽل رڪارڊ ذريعي ڪم ڪندي۔\n\nهي صفحو Admin CMS Panel مان اپڊيٽ ڪري سگهجي ٿو.',
     },
     'vision-mission': {
       eyebrow: 'وژن ۽ مشن',
@@ -133,17 +133,17 @@ const cmsFallbacks: Record<AppLanguage, Record<CmsPageSlug, CmsFallbackCopy>> = 
       eyebrow: 'منشور',
       title: 'منشور / Manshoor',
       subtitle:
-        'جٽ الائنس سنڌ جا رهنما اصول ۽ عوامي عزم.',
+        'جٽ ويلفيئر الائنس سنڌ جا رهنما اصول ۽ عوامي عزم.',
       content:
-        'جٽ الائنس سنڌ تعليم، صحت، روزگار، ويلفيئر، سماجي مدد، نمائندگي، اتحاد، وقار ۽ خدمت لاءِ ڪم ڪندي۔\n\nمنشور جا اهم نڪتا:\n- تعليم سپورٽ ۽ اسڪالرشپس\n- صحت مدد ۽ ايمرجنسي سپورٽ\n- روزگار ۽ مهارتن جي سپورٽ\n- مستحق خاندانن لاءِ ويلفيئر ڪيسز\n- شفاف عطيا ۽ مالي رڪارڊ\n- ڪميونٽي اتحاد ۽ تصديق ٿيل ميمبرشپ\n\nهي صفحو Admin CMS Panel مان اپڊيٽ ڪري سگهجي ٿو.',
+        'جٽ ويلفيئر الائنس سنڌ تعليم، صحت، روزگار، ويلفيئر، سماجي مدد، نمائندگي، اتحاد، وقار ۽ خدمت لاءِ ڪم ڪندي۔\n\nمنشور جا اهم نڪتا:\n- تعليم سپورٽ ۽ اسڪالرشپس\n- صحت مدد ۽ ايمرجنسي سپورٽ\n- روزگار ۽ مهارتن جي سپورٽ\n- مستحق خاندانن لاءِ ويلفيئر ڪيسز\n- شفاف عطيا ۽ مالي رڪارڊ\n- ڪميونٽي اتحاد ۽ تصديق ٿيل ميمبرشپ\n\nهي صفحو Admin CMS Panel مان اپڊيٽ ڪري سگهجي ٿو.',
     },
     constitution: {
       eyebrow: 'آئين',
-      title: 'JAS آئين',
+      title: 'JWAS آئين',
       subtitle:
-        'JAS جو آئيني ڍانچو، عهدا، ذميواريون ۽ تنظيمي قاعدا.',
+        'JWAS جو آئيني ڍانچو، عهدا، ذميواريون ۽ تنظيمي قاعدا.',
       content:
-        'آئين ۾ JAS ميمبرشپ، تنظيمي ڍانچو، مرڪزي ورڪنگ ڪميٽي، ڊويزن، ضلع ۽ تعلقه يونٽس، عهديدارن جون ذميواريون، پروگرام مينيجمينٽ، مالي قاعدا، نظم و ضبط، رڪارڊ ۽ رپورٽنگ شامل آهن۔\n\nموجوده درجا بندي:\nمرڪز / Markaz → ڊويزن → ضلعو → تعلقو\n\nهي صفحو Admin CMS Panel مان اپڊيٽ ڪري سگهجي ٿو.',
+        'آئين ۾ JWAS ميمبرشپ، تنظيمي ڍانچو، مرڪزي ورڪنگ ڪميٽي، ڊويزن، ضلع ۽ تعلقه يونٽس، عهديدارن جون ذميواريون، پروگرام مينيجمينٽ، مالي قاعدا، نظم و ضبط، رڪارڊ ۽ رپورٽنگ شامل آهن۔\n\nموجوده درجا بندي:\nمرڪز / Markaz → ڊويزن → ضلعو → تعلقو\n\nهي صفحو Admin CMS Panel مان اپڊيٽ ڪري سگهجي ٿو.',
     },
     cwc: {
       eyebrow: 'مرڪزي ورڪنگ ڪميٽي',
@@ -151,11 +151,11 @@ const cmsFallbacks: Record<AppLanguage, Record<CmsPageSlug, CmsFallbackCopy>> = 
       subtitle:
         'روزاني فيصلا ۽ پاليسي عملدرآمد لاءِ اعليٰ سطح جي گورننگ ۽ ايگزيڪيوٽو باڊي.',
       content:
-        'مرڪزي ورڪنگ ڪميٽي (CWC) جٽ الائنس سنڌ جي اعليٰ سطح جي گورننگ ۽ ايگزيڪيوٽو باڊي آهي۔\n\nمرڪزي ڪابينا جا عهدا:\n- چيئرمين\n- سينئر وائس چيئرمين\n- وائس چيئرمين\n- جنرل سيڪريٽري\n- انفارميشن سيڪريٽري\n\nضرورت مطابق اضافي ڪميٽيون، ونگز ۽ ايڊوائزري بورڊز ٺاهي سگهجن ٿا۔\n\nهي صفحو Admin CMS Panel مان اپڊيٽ ڪري سگهجي ٿو.',
+        'مرڪزي ورڪنگ ڪميٽي (CWC) جٽ ويلفيئر الائنس سنڌ جي اعليٰ سطح جي گورننگ ۽ ايگزيڪيوٽو باڊي آهي۔\n\nمرڪزي ڪابينا جا عهدا:\n- چيئرمين\n- سينئر وائس چيئرمين\n- وائس چيئرمين\n- جنرل سيڪريٽري\n- انفارميشن سيڪريٽري\n\nضرورت مطابق اضافي ڪميٽيون، ونگز ۽ ايڊوائزري بورڊز ٺاهي سگهجن ٿا۔\n\nهي صفحو Admin CMS Panel مان اپڊيٽ ڪري سگهجي ٿو.',
     },
     contact: {
       eyebrow: 'رابطو',
-      title: 'جٽ الائنس سنڌ سان رابطو',
+      title: 'جٽ ويلفيئر الائنس سنڌ سان رابطو',
       subtitle:
         'ميمبرشپ، پروگرام سپورٽ، عطيا، تصديق ۽ ڪميٽي ڪوآرڊينيشن لاءِ.',
       content:
@@ -174,14 +174,14 @@ const sharedCopy = {
     becomeMember: 'Become a Member',
     donate: 'Donate',
     contact: 'Contact',
-    officialContent: 'Official JAS Content',
+    officialContent: 'Official JWAS Content',
     cmsManaged:
       'These organization pages are managed from the CMS so future updates can be published without changing code.',
     loading: 'Loading...',
     publishedFromCms: 'Published from CMS',
     fallbackContent: 'Fallback content',
     membership: 'Membership',
-    membershipText: 'Join JAS as a verified member.',
+    membershipText: 'Join JWAS as a verified member.',
     programs: 'Programs',
     programsText: 'Explore education, health, welfare and employment support.',
     donors: 'Donors',
@@ -195,14 +195,14 @@ const sharedCopy = {
     becomeMember: 'ممبر بنیں',
     donate: 'عطیہ دیں',
     contact: 'رابطہ',
-    officialContent: 'سرکاری JAS مواد',
+    officialContent: 'سرکاری JWAS مواد',
     cmsManaged:
       'یہ تنظیمی صفحات CMS سے مینج ہوتے ہیں تاکہ آئندہ اپڈیٹس کوڈ تبدیل کیے بغیر شائع کی جا سکیں۔',
     loading: 'لوڈ ہو رہا ہے...',
     publishedFromCms: 'CMS سے شائع شدہ',
     fallbackContent: 'فال بیک مواد',
     membership: 'ممبرشپ',
-    membershipText: 'تصدیق شدہ ممبر کے طور پر JAS میں شامل ہوں۔',
+    membershipText: 'تصدیق شدہ ممبر کے طور پر JWAS میں شامل ہوں۔',
     programs: 'پروگرامز',
     programsText: 'تعلیم، صحت، ویلفیئر اور روزگار سپورٹ دیکھیں۔',
     donors: 'ڈونرز',
@@ -216,14 +216,14 @@ const sharedCopy = {
     becomeMember: 'ميمبر ٿيو',
     donate: 'عطيو ڏيو',
     contact: 'رابطو',
-    officialContent: 'سرڪاري JAS مواد',
+    officialContent: 'سرڪاري JWAS مواد',
     cmsManaged:
       'هي تنظيمي صفحا CMS مان منظم ٿين ٿا ته جيئن ايندڙ اپڊيٽس ڪوڊ تبديل ڪرڻ کانسواءِ شايع ٿي سگهن۔',
     loading: 'لوڊ ٿي رهيو آهي...',
     publishedFromCms: 'CMS مان شايع ٿيل',
     fallbackContent: 'فال بيڪ مواد',
     membership: 'ميمبرشپ',
-    membershipText: 'تصديق ٿيل ميمبر طور JAS ۾ شامل ٿيو۔',
+    membershipText: 'تصديق ٿيل ميمبر طور JWAS ۾ شامل ٿيو۔',
     programs: 'پروگرام',
     programsText: 'تعليم، صحت، ويلفيئر ۽ روزگار سپورٽ ڏسو۔',
     donors: 'ڊونرز',
@@ -240,7 +240,7 @@ const committeesCopy = {
     eyebrow: 'Organization Structure',
     title: 'Public Committees',
     description:
-      'Publicly displayed Central Executive, Central Advisory, Provincial, Divisional, District and Taluka committees of Jatt Alliance Sindh with official office bearers and tenure details.',
+      'Publicly displayed Central Executive, Central Advisory, Provincial, Divisional, District and Taluka committees of Jatt Welfare Alliance Sindh with official office bearers and tenure details.',
     hierarchy: 'CEC → Advisory → Provincial → Divisional → District → Taluka',
     hierarchyText:
       'Only committees marked for public display are shown here. Internal or draft committee records remain restricted to administrators.',
@@ -261,7 +261,7 @@ const committeesCopy = {
     officeBearerPlural: 'office bearers',
     backToCommittees: 'Back to Committees',
     officialRecord:
-      'Official public record of Jatt Alliance Sindh office bearers for this committee.',
+      'Official public record of Jatt Welfare Alliance Sindh office bearers for this committee.',
     publicOfficeBearers: 'Public office bearers',
     activeOfficeBearers: 'active office bearers currently listed for this committee.',
     noOfficeBearers: 'No public office bearers have been assigned yet.',
@@ -278,7 +278,7 @@ const committeesCopy = {
     eyebrow: 'تنظیمی ڈھانچہ',
     title: 'عوامی کمیٹیاں',
     description:
-      'جٹ الائنس سندھ کی مرکزی ایگزیکٹو، مرکزی مشاورتی، صوبائی، ڈویژنل، ضلعی اور تعلقہ کمیٹیاں، سرکاری عہدیداران اور مدت کی تفصیل کے ساتھ۔',
+      'جٹ ویلفیئر الائنس سندھ کی مرکزی ایگزیکٹو، مرکزی مشاورتی، صوبائی، ڈویژنل، ضلعی اور تعلقہ کمیٹیاں، سرکاری عہدیداران اور مدت کی تفصیل کے ساتھ۔',
     hierarchy: 'CEC → Advisory → صوبہ → ڈویژن → ضلع → تعلقہ',
     hierarchyText:
       'صرف public display والی کمیٹیاں یہاں نظر آئیں گی۔ اندرونی یا draft کمیٹی ریکارڈ صرف ایڈمنز تک محدود رہیں گے۔',
@@ -299,7 +299,7 @@ const committeesCopy = {
     officeBearerPlural: 'عہدیداران',
     backToCommittees: 'کمیٹیوں پر واپس',
     officialRecord:
-      'اس کمیٹی کے لیے جٹ الائنس سندھ کے عہدیداران کا سرکاری عوامی ریکارڈ۔',
+      'اس کمیٹی کے لیے جٹ ویلفیئر الائنس سندھ کے عہدیداران کا سرکاری عوامی ریکارڈ۔',
     publicOfficeBearers: 'عوامی عہدیداران',
     activeOfficeBearers: 'فعال عہدیداران اس کمیٹی میں درج ہیں۔',
     noOfficeBearers: 'ابھی کوئی عوامی عہدیدار اسائن نہیں کیا گیا۔',
@@ -316,7 +316,7 @@ const committeesCopy = {
     eyebrow: 'تنظيمي ڍانچو',
     title: 'عوامي ڪميٽيون',
     description:
-      'جٽ الائنس سنڌ جون مرڪزي ايگزيڪيوٽو، مرڪزي مشاورتي، صوبائي، ڊويزنل، ضلعي ۽ تعلقي ڪميٽيون، سرڪاري عهديدارن ۽ مدت جي تفصيل سان۔',
+      'جٽ ويلفيئر الائنس سنڌ جون مرڪزي ايگزيڪيوٽو، مرڪزي مشاورتي، صوبائي، ڊويزنل، ضلعي ۽ تعلقي ڪميٽيون، سرڪاري عهديدارن ۽ مدت جي تفصيل سان۔',
     hierarchy: 'CEC → Advisory → صوبو → ڊويزن → ضلعو → تعلقو',
     hierarchyText:
       'صرف public display واريون ڪميٽيون هتي نظر اينديون. اندروني يا draft ڪميٽي رڪارڊ صرف ايڊمن تائين محدود رهندا۔',
@@ -337,7 +337,7 @@ const committeesCopy = {
     officeBearerPlural: 'عهديدار',
     backToCommittees: 'ڪميٽين ڏانهن واپس',
     officialRecord:
-      'هن ڪميٽي لاءِ جٽ الائنس سنڌ جي عهديدارن جو سرڪاري عوامي رڪارڊ.',
+      'هن ڪميٽي لاءِ جٽ ويلفيئر الائنس سنڌ جي عهديدارن جو سرڪاري عوامي رڪارڊ.',
     publicOfficeBearers: 'عوامي عهديدار',
     activeOfficeBearers: 'فعال عهديدار هن ڪميٽي ۾ درج آهن.',
     noOfficeBearers: 'اڃا ڪو عوامي عهديدار اسائن نه ٿيو.',
@@ -357,22 +357,22 @@ const mediaCopy = {
     newsEyebrow: 'News & Updates',
     newsTitle: 'Latest announcements and community updates',
     newsDescription:
-      'Published updates from Jatt Alliance Sindh, including general announcements, program news, events and community activity.',
+      'Published updates from Jatt Welfare Alliance Sindh, including general announcements, program news, events and community activity.',
     newsSearch: 'Search news, announcements, programs...',
     loadingNews: 'Loading published news...',
     emptyNews: 'No published news found.',
     featured: 'Featured',
     readMore: 'Read More',
     eventsEyebrow: 'Events',
-    eventsTitle: 'Upcoming and published JAS events',
+    eventsTitle: 'Upcoming and published JWAS events',
     eventsDescription:
       'Public event notices, meetings, community sessions and program activity dates.',
     loadingEvents: 'Loading events...',
     emptyEvents: 'No published events found.',
     galleryEyebrow: 'Gallery',
-    galleryTitle: 'JAS events and community activity gallery',
+    galleryTitle: 'JWAS events and community activity gallery',
     galleryDescription:
-      'Published photos from JAS meetings, programs, welfare activities, education support, health assistance and community events.',
+      'Published photos from JWAS meetings, programs, welfare activities, education support, health assistance and community events.',
     loadingGallery: 'Loading gallery...',
     emptyGallery: 'No published gallery items found.',
   },
@@ -380,22 +380,22 @@ const mediaCopy = {
     newsEyebrow: 'خبریں اور اپڈیٹس',
     newsTitle: 'تازہ اعلانات اور کمیونٹی اپڈیٹس',
     newsDescription:
-      'جٹ الائنس سندھ کی شائع شدہ اپڈیٹس، جن میں عام اعلانات، پروگرام نیوز، ایونٹس اور کمیونٹی سرگرمیاں شامل ہیں۔',
+      'جٹ ویلفیئر الائنس سندھ کی شائع شدہ اپڈیٹس، جن میں عام اعلانات، پروگرام نیوز، ایونٹس اور کمیونٹی سرگرمیاں شامل ہیں۔',
     newsSearch: 'خبریں، اعلانات، پروگرامز تلاش کریں...',
     loadingNews: 'شائع شدہ خبریں لوڈ ہو رہی ہیں...',
     emptyNews: 'کوئی شائع شدہ خبر نہیں ملی۔',
     featured: 'نمایاں',
     readMore: 'مزید پڑھیں',
     eventsEyebrow: 'ایونٹس',
-    eventsTitle: 'آنے والے اور شائع شدہ JAS ایونٹس',
+    eventsTitle: 'آنے والے اور شائع شدہ JWAS ایونٹس',
     eventsDescription:
       'عوامی ایونٹ نوٹس، میٹنگز، کمیونٹی سیشنز اور پروگرام سرگرمیوں کی تاریخیں۔',
     loadingEvents: 'ایونٹس لوڈ ہو رہے ہیں...',
     emptyEvents: 'کوئی شائع شدہ ایونٹ نہیں ملا۔',
     galleryEyebrow: 'گیلری',
-    galleryTitle: 'JAS ایونٹس اور کمیونٹی سرگرمیوں کی گیلری',
+    galleryTitle: 'JWAS ایونٹس اور کمیونٹی سرگرمیوں کی گیلری',
     galleryDescription:
-      'JAS میٹنگز، پروگرامز، ویلفیئر سرگرمیوں، تعلیمی سپورٹ، صحت مدد اور کمیونٹی ایونٹس کی شائع شدہ تصاویر۔',
+      'JWAS میٹنگز، پروگرامز، ویلفیئر سرگرمیوں، تعلیمی سپورٹ، صحت مدد اور کمیونٹی ایونٹس کی شائع شدہ تصاویر۔',
     loadingGallery: 'گیلری لوڈ ہو رہی ہے...',
     emptyGallery: 'کوئی شائع شدہ گیلری آئٹم نہیں ملا۔',
   },
@@ -403,22 +403,22 @@ const mediaCopy = {
     newsEyebrow: 'خبرون ۽ اپڊيٽس',
     newsTitle: 'تازا اعلان ۽ ڪميونٽي اپڊيٽس',
     newsDescription:
-      'جٽ الائنس سنڌ جون شايع ٿيل اپڊيٽس، جن ۾ عام اعلان، پروگرام خبرون، ايونٽس ۽ ڪميونٽي سرگرميون شامل آهن۔',
+      'جٽ ويلفيئر الائنس سنڌ جون شايع ٿيل اپڊيٽس، جن ۾ عام اعلان، پروگرام خبرون، ايونٽس ۽ ڪميونٽي سرگرميون شامل آهن۔',
     newsSearch: 'خبرون، اعلان، پروگرام ڳوليو...',
     loadingNews: 'شايع ٿيل خبرون لوڊ ٿي رهيون آهن...',
     emptyNews: 'ڪا شايع ٿيل خبر نه ملي.',
     featured: 'نمايان',
     readMore: 'وڌيڪ پڙهو',
     eventsEyebrow: 'ايونٽس',
-    eventsTitle: 'ايندڙ ۽ شايع ٿيل JAS ايونٽس',
+    eventsTitle: 'ايندڙ ۽ شايع ٿيل JWAS ايونٽس',
     eventsDescription:
       'عوامي ايونٽ نوٽس، ميٽنگون، ڪميونٽي سيشن ۽ پروگرام سرگرمين جون تاريخون۔',
     loadingEvents: 'ايونٽس لوڊ ٿي رهيا آهن...',
     emptyEvents: 'ڪو شايع ٿيل ايونٽ نه مليو.',
     galleryEyebrow: 'گيلري',
-    galleryTitle: 'JAS ايونٽس ۽ ڪميونٽي سرگرمين جي گيلري',
+    galleryTitle: 'JWAS ايونٽس ۽ ڪميونٽي سرگرمين جي گيلري',
     galleryDescription:
-      'JAS ميٽنگن، پروگرامن، ويلفيئر سرگرمين، تعليمي سپورٽ، صحت مدد ۽ ڪميونٽي ايونٽس جون شايع ٿيل تصويرون۔',
+      'JWAS ميٽنگن، پروگرامن، ويلفيئر سرگرمين، تعليمي سپورٽ، صحت مدد ۽ ڪميونٽي ايونٽس جون شايع ٿيل تصويرون۔',
     loadingGallery: 'گيلري لوڊ ٿي رهي آهي...',
     emptyGallery: 'ڪا شايع ٿيل گيلري آئٽم نه ملي.',
   },

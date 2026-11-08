@@ -1,3 +1,4 @@
+import { organizationDisplayText } from '../lib/branding'
 // src/routes/-cms-public-page.tsx
 import { Link } from '@tanstack/react-router'
 import { ArrowRight, FileText, ShieldCheck } from 'lucide-react'
@@ -42,9 +43,9 @@ export function CmsPublicPage({ slug }: CmsPublicPageProps) {
     }
   }, [publicCopy.language, slug])
 
-  const title = page?.title || fallback.title || config.fallbackTitle
-  const subtitle = page?.subtitle || fallback.subtitle || config.fallbackSubtitle
-  const content = page?.content || fallback.content || config.fallbackContent
+  const title = organizationDisplayText(page?.title || fallback.title || config.fallbackTitle)
+  const subtitle = organizationDisplayText(page?.subtitle || fallback.subtitle || config.fallbackSubtitle)
+  const content = organizationDisplayText(page?.content || fallback.content || config.fallbackContent)
   const blocks = formatCmsContent(content)
 
   return (

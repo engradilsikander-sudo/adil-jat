@@ -68,12 +68,12 @@ const supabaseAny = supabase as unknown as {
 export const cmsPublicPages: CmsPublicConfig[] = [
   {
     slug: 'about',
-    eyebrow: 'About JAS',
-    fallbackTitle: 'About Jatt Alliance Sindh',
+    eyebrow: 'About JWAS',
+    fallbackTitle: 'About Jatt Welfare Alliance Sindh',
     fallbackSubtitle:
       'A non-political, welfare-focused and member-verified community platform for Jatt families across Sindh.',
     fallbackContent:
-      'Jatt Alliance Sindh (JAS) is a community welfare platform created to organize membership, education support, health assistance, welfare cases, employment support, donations and verified public service records.\n\nThe organization is designed to work through transparent membership verification, responsible admin review, district/taluka coordination and digital records.\n\nThis page can be updated from the Admin CMS panel.',
+      'Jatt Welfare Alliance Sindh (JWAS) is a community welfare platform created to organize membership, education support, health assistance, welfare cases, employment support, donations and verified public service records.\n\nThe organization is designed to work through transparent membership verification, responsible admin review, district/taluka coordination and digital records.\n\nThis page can be updated from the Admin CMS panel.',
   },
   {
     slug: 'vision-mission',
@@ -89,18 +89,18 @@ export const cmsPublicPages: CmsPublicConfig[] = [
     eyebrow: 'Manifesto / Manshoor',
     fallbackTitle: 'Manifesto / Manshoor',
     fallbackSubtitle:
-      'The guiding principles and public commitment of Jatt Alliance Sindh.',
+      'The guiding principles and public commitment of Jatt Welfare Alliance Sindh.',
     fallbackContent:
-      'Jatt Alliance Sindh works for education, health, employment, welfare, social support, representation, unity, dignity and service.\n\nCore manifesto points include:\n- Education support and scholarships\n- Health assistance and emergency help\n- Employment and skills support\n- Welfare cases for deserving families\n- Transparent donations and finance records\n- Community unity and verified membership\n\nThis page can be updated from the Admin CMS panel.',
+      'Jatt Welfare Alliance Sindh works for education, health, employment, welfare, social support, representation, unity, dignity and service.\n\nCore manifesto points include:\n- Education support and scholarships\n- Health assistance and emergency help\n- Employment and skills support\n- Welfare cases for deserving families\n- Transparent donations and finance records\n- Community unity and verified membership\n\nThis page can be updated from the Admin CMS panel.',
   },
   {
     slug: 'constitution',
     eyebrow: 'Constitution',
-    fallbackTitle: 'JAS Constitution',
+    fallbackTitle: 'JWAS Constitution',
     fallbackSubtitle:
-      'The constitutional structure, roles, responsibilities and organizational rules of JAS.',
+      'The constitutional structure, roles, responsibilities and organizational rules of JWAS.',
     fallbackContent:
-      'The constitution defines JAS membership, organizational structure, Central Executive Committee, Central Advisory Committee, provincial, divisional, district and taluka units, duties of office bearers, program management, finance rules, discipline, records and reporting.\n\nCurrent hierarchy:\nCEC → Advisory → Provincial → Divisional → District → Taluka\n\nThis page can be updated from the Admin CMS panel.',
+      'The constitution defines JWAS membership, organizational structure, Central Executive Committee, Central Advisory Committee, provincial, divisional, district and taluka units, duties of office bearers, program management, finance rules, discipline, records and reporting.\n\nCurrent hierarchy:\nCEC → Advisory → Provincial → Divisional → District → Taluka\n\nThis page can be updated from the Admin CMS panel.',
   },
   {
     slug: 'cwc',
@@ -109,12 +109,12 @@ export const cmsPublicPages: CmsPublicConfig[] = [
     fallbackSubtitle:
       'The top-level governing and executive body responsible for day-to-day decisions and policy implementation.',
     fallbackContent:
-      'The Central Working Committee (CWC) is the top-level governing and executive body of Jatt Alliance Sindh.\n\nCentral Cabinet designations include:\n- Chairman\n- Senior Vice Chairman\n- Vice Chairman\n- General Secretary\n- Information Secretary\n\nAdditional committees, wings and advisory boards may be created as needed.\n\nThis page can be updated from the Admin CMS panel.',
+      'The Central Working Committee (CWC) is the top-level governing and executive body of Jatt Welfare Alliance Sindh.\n\nCentral Cabinet designations include:\n- Chairman\n- Senior Vice Chairman\n- Vice Chairman\n- General Secretary\n- Information Secretary\n\nAdditional committees, wings and advisory boards may be created as needed.\n\nThis page can be updated from the Admin CMS panel.',
   },
   {
     slug: 'contact',
     eyebrow: 'Contact',
-    fallbackTitle: 'Contact Jatt Alliance Sindh',
+    fallbackTitle: 'Contact Jatt Welfare Alliance Sindh',
     fallbackSubtitle:
       'For membership, program support, donations, verification and committee coordination.',
     fallbackContent:

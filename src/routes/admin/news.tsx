@@ -68,7 +68,7 @@ function AdminNewsPage() {
               <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-700">News & Media</p>
               <h1 className="mt-2 text-3xl font-black tracking-tight text-slate-950">News Admin</h1>
               <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-                Create, edit, publish and archive public JAS news posts and announcements.
+                Create, edit, publish and archive public JWAS news posts and announcements.
               </p>
             </div>
             <div className="flex flex-wrap gap-2">

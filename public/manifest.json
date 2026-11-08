@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "short_name": "JAS",
-  "name": "Jatt Alliance Sindh Member Platform",
-  "description": "Official JAS membership portal for registration, digital cards, member updates, donations and support programs.",
+  "short_name": "JWAS",
+  "name": "Jatt Welfare Alliance Sindh",
+  "description": "Official JWAS membership portal for registration, digital cards, member updates, donations and support programs.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
@@ -36,7 +36,7 @@
     {
       "name": "Member Dashboard",
       "short_name": "Dashboard",
-      "description": "Open your JAS member dashboard.",
+      "description": "Open your JWAS member dashboard.",
       "url": "/dashboard",
       "icons": [
         {
@@ -48,7 +48,7 @@
     {
       "name": "Digital Card",
       "short_name": "Card",
-      "description": "Open the JAS digital membership card.",
+      "description": "Open the JWAS digital membership card.",
       "url": "/card",
       "icons": [
         {
@@ -60,7 +60,7 @@
     {
       "name": "Donate",
       "short_name": "Donate",
-      "description": "Submit a JAS donation record.",
+      "description": "Submit a JWAS donation record.",
       "url": "/donate",
       "icons": [
         {
@@ -72,7 +72,7 @@
     {
       "name": "Member Updates",
       "short_name": "Updates",
-      "description": "Open JAS in-app updates and notifications.",
+      "description": "Open JWAS in-app updates and notifications.",
       "url": "/notifications",
       "icons": [
         {

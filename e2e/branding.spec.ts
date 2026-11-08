@@ -1,0 +1,30 @@
+import { test, expect } from '@playwright/test'
+import { installSyntheticSession, verifySyntheticSession } from './fixtures/mobile-session'
+
+test.use({ serviceWorkers: 'block' })
+test.afterEach(async ({ page }, info) => verifySyntheticSession(page, info))
+
+test('JWAS desktop identity preserves the UX.14 accordion and persisted icon rail', async ({ page, baseURL }) => {
+  test.skip(!['127.0.0.1', 'localhost'].includes(new URL(baseURL!).hostname), 'Local synthetic UI only')
+  await installSyntheticSession(page, { role: 'admin', language: 'en' })
+  await page.goto('/admin/programs/education')
+  const sidebar = page.locator('.admin-sidebar').first()
+  await expect(sidebar.getByText('JWAS Admin Panel', { exact: true })).toBeVisible()
+  await expect(sidebar.getByText('JWAS Management Console', { exact: true })).toBeVisible()
+  await expect(sidebar.getByRole('button', { name: 'Programs', exact: true })).toHaveAttribute('aria-expanded', 'true')
+  await expect(sidebar.getByRole('link', { name: 'Education', exact: true })).toHaveAttribute('aria-current', 'page')
+  await page.screenshot({ path: '/tmp/jwas-b1-sidebar.png', fullPage: true })
+  await sidebar.getByRole('button', { name: 'Finance & Reports', exact: true }).click()
+  await expect(sidebar.getByRole('button', { name: 'Finance & Reports', exact: true })).toHaveAttribute('aria-expanded', 'true')
+  await sidebar.getByRole('button', { name: 'Collapse sidebar' }).click()
+  await expect(sidebar).toHaveClass(/is-collapsed/)
+  expect(await page.evaluate(() => localStorage.getItem('jas_admin_sidebar_collapsed_v1'))).toBe('1')
+  await page.reload()
+  await expect(sidebar).toHaveClass(/is-collapsed/)
+  await expect(sidebar.getByRole('button', { name: 'Programs', exact: true })).toBeVisible()
+  await sidebar.getByRole('button', { name: 'Programs', exact: true }).click()
+  await expect(sidebar).not.toHaveClass(/is-collapsed/)
+  await expect(sidebar.getByRole('link', { name: 'Education', exact: true })).toHaveAttribute('aria-current', 'page')
+  await expect(sidebar.getByText('JWAS Admin Panel', { exact: true })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1)).toBe(true)
+})

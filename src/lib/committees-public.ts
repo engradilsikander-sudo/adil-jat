@@ -172,7 +172,7 @@ export function getCommitteeLocation(
 }
 
 export function getInitials(name: string | null | undefined) {
-  const parts = (name || 'JAS')
+  const parts = (name || 'JWAS')
     .split(/\s+/)
     .map((item) => item.trim())
     .filter(Boolean)
@@ -180,7 +180,7 @@ export function getInitials(name: string | null | undefined) {
   return parts
     .slice(0, 2)
     .map((item) => item[0]?.toUpperCase())
-    .join('') || 'JAS'
+    .join('') || 'JWAS'
 }
 
 
@@ -189,7 +189,7 @@ export function formatOfficeBearerDisplayText(value: string | null | undefined) 
     .replace(/\bRepresenttive\b/gi, 'Representative')
     .replace(/\bRepresenntive\b/gi, 'Representative')
     .replace(/\bRepresentive\b/gi, 'Representative')
-    .replace(/\bJatt\s*Alliance\s*Sindh\b/gi, 'Jatt Alliance Sindh')
+    .replace(/\bJatt\s*Alliance\s*Sindh\b/gi, 'Jatt Welfare Alliance Sindh')
     .replace(/\s+/g, ' ')
     .trim()
 }

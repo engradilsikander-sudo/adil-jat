@@ -1,3 +1,4 @@
+import { BRAND } from '../../lib/branding'
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { Menu, X } from 'lucide-react'
 import { AdminSidebar } from './AdminSidebar'
@@ -67,7 +68,7 @@ export function AdminShell({ children, title, subtitle }: { children: ReactNode;
         <AdminSidebar collapsed={sidebarCollapsed} onToggleCollapsed={toggleSidebarCollapsed} />
         <section className="admin-shell-content">
           <div className="admin-mobile-bar">
-            <div><p className="admin-mobile-eyebrow">JAS</p><h1>{title ?? copy.admin}</h1><p>{subtitle ?? copy.subtitle}</p></div>
+            <div><p className="admin-mobile-eyebrow">{BRAND.shortName}</p><h1>{title ?? `${BRAND.shortName} ${copy.admin}`}</h1><p>{subtitle ?? copy.subtitle}</p></div>
             <button ref={menuButtonRef} type="button" onClick={() => { restoreFocus.current = true; setMobileOpen(true) }} className="admin-mobile-menu-btn" aria-label={copy.open} aria-expanded={mobileOpen} aria-haspopup="dialog" aria-controls={mobileOpen ? 'jas-admin-navigation-dialog' : undefined}>
               <Menu size={20} />
             </button>

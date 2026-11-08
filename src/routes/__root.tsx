@@ -1,3 +1,4 @@
+import { BRAND, BRAND_METADATA } from '../lib/branding'
 // src/routes/__root.tsx
 import {
   HeadContent,
@@ -21,30 +22,34 @@ export const Route = createRootRoute({
     meta: [
       { charSet: 'utf-8' },
       { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },
-      { title: 'Jatt Alliance Sindh | Member & Programs Portal' },
+      { title: BRAND_METADATA.title },
       {
         name: 'description',
         content:
-          'Jatt Alliance Sindh membership registration, admin approval, QR verification, digital ID card and member-verified education, health, welfare and employment support platform.',
+          BRAND_METADATA.description,
       },
       { name: 'theme-color', content: '#142d4e' },
-      { name: 'application-name', content: 'JAS' },
+      { name: 'application-name', content: BRAND.shortName },
       { name: 'mobile-web-app-capable', content: 'yes' },
       { name: 'apple-mobile-web-app-capable', content: 'yes' },
-      { name: 'apple-mobile-web-app-title', content: 'JAS' },
+      { name: 'apple-mobile-web-app-title', content: BRAND.shortName },
       { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
       { name: 'msapplication-TileColor', content: '#142d4e' },
       { name: 'format-detection', content: 'telephone=no' },
       {
         property: 'og:title',
-        content: 'Jatt Alliance Sindh Member & Programs Portal',
+        content: BRAND_METADATA.socialTitle,
       },
       {
         property: 'og:description',
         content:
-          'Register, verify and access Jatt Alliance Sindh digital membership, education, health, welfare and employment support programs.',
+          BRAND_METADATA.socialDescription,
       },
       { property: 'og:type', content: 'website' },
+      { property: 'og:site_name', content: BRAND.name },
+      { name: 'twitter:card', content: 'summary' },
+      { name: 'twitter:title', content: BRAND_METADATA.socialTitle },
+      { name: 'twitter:description', content: BRAND_METADATA.socialDescription },
     ],
     links: [
       { rel: 'stylesheet', href: appCss },

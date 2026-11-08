@@ -204,7 +204,7 @@ export const healthDocumentOptions: HealthDocumentConfig[] = [
   {
     type: 'member_cnic',
     label: 'Member CNIC',
-    description: 'Upload approved JAS member CNIC copy.',
+    description: 'Upload approved JWAS member CNIC copy.',
     required: true,
   },
   {

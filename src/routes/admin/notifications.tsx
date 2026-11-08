@@ -411,7 +411,7 @@ function AdminNotificationsPage() {
                   }
                   maxLength={100}
                   className="h-11 rounded-xl border border-slate-300 px-4 font-semibold outline-none focus:border-emerald-600 focus:ring-4 focus:ring-emerald-100"
-                  placeholder="Important JAS member update"
+                  placeholder="Important JWAS member update"
                 />
               </label>
 

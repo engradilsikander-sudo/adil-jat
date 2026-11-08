@@ -1,5 +1,6 @@
+import { BRAND } from './branding'
 export const MEMBER_CARD_VERSION = 'v1'
-export const JAS_ORGANIZATION_NAME = 'Jatt Alliance Sindh'
+export const JAS_ORGANIZATION_NAME = BRAND.name
 export const JAS_ORGANIZATION_LOCATION = 'Sindh, Pakistan'
 export const DEFAULT_PUBLIC_SITE_ORIGIN = 'https://jasofficial.org'
 

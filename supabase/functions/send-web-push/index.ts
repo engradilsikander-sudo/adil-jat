@@ -211,10 +211,10 @@ serve(async (request) => {
 
     await processInChunks(jobs, SEND_CONCURRENCY, async (job) => {
       const payload = JSON.stringify({
-        title: cleanText(job.title, 'JAS Update', 80),
+        title: cleanText(job.title, 'JWAS Update', 80),
         body: cleanText(
           job.message,
-          'You have a new update in the JAS member portal.',
+          'You have a new update in the JWAS member portal.',
           220,
         ),
         url: cleanActionUrl(job.action_url),

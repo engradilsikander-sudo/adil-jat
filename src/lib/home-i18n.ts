@@ -6,11 +6,11 @@ type TextDirection = 'ltr' | 'rtl'
 const homeCopy = {
   en: {
     portalBadge: 'Official Membership Portal',
-    brandLine: 'Jatt Alliance Sindh · JAS',
+    brandLine: 'Jatt Welfare Alliance Sindh · JWAS',
     heroTitleLine1: 'Member Portal',
-    heroTitleLine2: 'for JAS',
+    heroTitleLine2: 'for JWAS',
     heroDescription:
-      'A focused digital system for JAS membership registration, manual payment receipt verification, admin approval, QR-based digital cards and member-linked support programs.',
+      'A focused digital system for JWAS membership registration, manual payment receipt verification, admin approval, QR-based digital cards and member-linked support programs.',
     actions: {
       apply: 'Apply for Membership',
       viewPrograms: 'View Programs',
@@ -56,7 +56,7 @@ const homeCopy = {
         'Program cards are now cleaned and status badges reflect the current portal rollout instead of marking every module as fully active.',
       membership: {
         title: 'Membership Portal',
-        text: 'Register as a JAS member, track approval status and access your digital membership card.',
+        text: 'Register as a JWAS member, track approval status and access your digital membership card.',
         badge: 'Active',
       },
       education: {
@@ -134,11 +134,11 @@ const homeCopy = {
   },
   ur: {
     portalBadge: 'آفیشل ممبرشپ پورٹل',
-    brandLine: 'جٹ الائنس سندھ · JAS',
+    brandLine: 'جٹ ویلفیئر الائنس سندھ · JWAS',
     heroTitleLine1: 'ممبر پورٹل',
-    heroTitleLine2: 'JAS کے لیے',
+    heroTitleLine2: 'JWAS کے لیے',
     heroDescription:
-      'JAS ممبرشپ رجسٹریشن، مینول پیمنٹ رسید ویریفکیشن، ایڈمن منظوری، QR ڈیجیٹل کارڈز اور ممبر سے منسلک سپورٹ پروگرامز کے لیے ایک فوکسڈ ڈیجیٹل سسٹم۔',
+      'JWAS ممبرشپ رجسٹریشن، مینول پیمنٹ رسید ویریفکیشن، ایڈمن منظوری، QR ڈیجیٹل کارڈز اور ممبر سے منسلک سپورٹ پروگرامز کے لیے ایک فوکسڈ ڈیجیٹل سسٹم۔',
     actions: {
       apply: 'ممبرشپ کے لیے اپلائی کریں',
       viewPrograms: 'پروگرامز دیکھیں',
@@ -184,7 +184,7 @@ const homeCopy = {
         'پروگرام کارڈز اب صاف ہیں اور اسٹیٹس بیجز موجودہ پورٹل رول آؤٹ کے مطابق ہیں، ہر ماڈیول کو مکمل ایکٹو نہیں دکھایا گیا۔',
       membership: {
         title: 'ممبرشپ پورٹل',
-        text: 'JAS ممبر کے طور پر رجسٹر ہوں، منظوری اسٹیٹس ٹریک کریں اور اپنا ڈیجیٹل ممبرشپ کارڈ حاصل کریں۔',
+        text: 'JWAS ممبر کے طور پر رجسٹر ہوں، منظوری اسٹیٹس ٹریک کریں اور اپنا ڈیجیٹل ممبرشپ کارڈ حاصل کریں۔',
         badge: 'فعال',
       },
       education: {
@@ -262,11 +262,11 @@ const homeCopy = {
   },
   sd: {
     portalBadge: 'آفيشل ميمبرشپ پورٽل',
-    brandLine: 'جٽ الائنس سنڌ · JAS',
+    brandLine: 'جٽ ويلفيئر الائنس سنڌ · JWAS',
     heroTitleLine1: 'ميمبر پورٽل',
-    heroTitleLine2: 'JAS لاءِ',
+    heroTitleLine2: 'JWAS لاءِ',
     heroDescription:
-      'JAS ميمبرشپ رجسٽريشن، مينول پيمنٽ رسيد ويريفڪيشن، ايڊمن منظوري، QR ڊجيٽل ڪارڊز ۽ ميمبر سان ڳنڍيل سپورٽ پروگرامز لاءِ هڪ فوڪسڊ ڊجيٽل سسٽم.',
+      'JWAS ميمبرشپ رجسٽريشن، مينول پيمنٽ رسيد ويريفڪيشن، ايڊمن منظوري، QR ڊجيٽل ڪارڊز ۽ ميمبر سان ڳنڍيل سپورٽ پروگرامز لاءِ هڪ فوڪسڊ ڊجيٽل سسٽم.',
     actions: {
       apply: 'ميمبرشپ لاءِ اپلائي ڪريو',
       viewPrograms: 'پروگرام ڏسو',
@@ -312,7 +312,7 @@ const homeCopy = {
         'پروگرام ڪارڊز هاڻي صاف آهن ۽ اسٽيٽس بيجز موجوده پورٽل رول آئوٽ مطابق آهن، هر ماڊيول کي مڪمل ايڪٽو نه ڏيکاريو ويو.',
       membership: {
         title: 'ميمبرشپ پورٽل',
-        text: 'JAS ميمبر طور رجسٽر ٿيو، منظوري اسٽيٽس ٽريڪ ڪريو ۽ پنهنجو ڊجيٽل ميمبرشپ ڪارڊ حاصل ڪريو.',
+        text: 'JWAS ميمبر طور رجسٽر ٿيو، منظوري اسٽيٽس ٽريڪ ڪريو ۽ پنهنجو ڊجيٽل ميمبرشپ ڪارڊ حاصل ڪريو.',
         badge: 'فعال',
       },
       education: {

@@ -232,13 +232,13 @@ function DonatePage() {
         <div className="mx-auto max-w-6xl">
           <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-bold">
             <BadgeIndianRupee className="h-4 w-4 text-amber-300" />
-            JAS Donation Fund
+            JWAS Donation Fund
           </div>
 
           <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
             <div>
               <h1 className="text-4xl font-black md:text-6xl">
-                Donate for JAS Community Support
+                Donate for JWAS Community Support
               </h1>
               <p className="mt-4 max-w-3xl text-lg leading-8 text-white/70">
                 Education, health, welfare aur general fund ke liye donation

@@ -1,7 +1,7 @@
 export const JAS_EMAIL_BRAND = {
-  shortName: 'JAS',
-  organization: 'Jatt Alliance Sindh',
-  senderName: 'Jatt Alliance Sindh',
+  shortName: 'JWAS',
+  organization: 'Jatt Welfare Alliance Sindh',
+  senderName: 'Jatt Welfare Alliance Sindh',
   senderEmail: 'support@jasofficial.org',
   supportEmail: 'support@jasofficial.org',
   defaultSiteUrl: 'https://jasofficial.org',
@@ -102,10 +102,10 @@ export function escapeEmailHtml(value: string) {
 export function renderNotificationEmail(
   input: NotificationEmailInput,
 ): NotificationEmailContent {
-  const title = cleanEmailText(input.title, 'JAS notification', 140)
+  const title = cleanEmailText(input.title, 'JWAS notification', 140)
   const message = cleanEmailMessage(
     input.message,
-    'Your JAS member portal record has been updated.',
+    'Your JWAS member portal record has been updated.',
     5000,
   )
   const recipientName = cleanEmailText(input.recipientName, 'Member', 120)
@@ -118,7 +118,7 @@ export function renderNotificationEmail(
   const safeActionUrl = escapeEmailHtml(actionUrl)
   const subject = title.toLowerCase().startsWith('jas')
     ? title
-    : `[JAS] ${title}`
+    : `[JWAS] ${title}`
 
   const htmlContent = `<!doctype html>
 <html lang="en" dir="${direction}">
@@ -136,8 +136,8 @@ export function renderNotificationEmail(
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:620px;background:#ffffff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;">
             <tr>
               <td style="background:#064e3b;padding:24px 28px;color:#ffffff;text-align:left;" dir="ltr">
-                <div style="display:inline-block;border:2px solid #fbbf24;border-radius:999px;padding:8px 12px;font-size:20px;font-weight:800;letter-spacing:1px;">JAS</div>
-                <div style="margin-top:12px;font-size:19px;font-weight:800;">Jatt Alliance Sindh</div>
+                <div style="display:inline-block;border:2px solid #fbbf24;border-radius:999px;padding:8px 12px;font-size:20px;font-weight:800;letter-spacing:1px;">JWAS</div>
+                <div style="margin-top:12px;font-size:19px;font-weight:800;">Jatt Welfare Alliance Sindh</div>
                 <div style="margin-top:4px;font-size:12px;color:#d1fae5;">Official Member Portal Notification</div>
               </td>
             </tr>
@@ -147,7 +147,7 @@ export function renderNotificationEmail(
                 <h1 style="margin:0 0 16px;font-size:24px;line-height:32px;color:#0f172a;">${safeTitle}</h1>
                 <div style="font-size:15px;line-height:25px;color:#334155;white-space:normal;">${messageHtml}</div>
                 <div style="padding:24px 0 18px;" dir="ltr">
-                  <a href="${safeActionUrl}" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;line-height:20px;padding:13px 22px;border-radius:10px;">Open JAS Member Portal</a>
+                  <a href="${safeActionUrl}" style="display:inline-block;background:#0f766e;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;line-height:20px;padding:13px 22px;border-radius:10px;">Open JWAS Member Portal</a>
                 </div>
                 <div style="font-size:12px;line-height:19px;color:#64748b;word-break:break-all;" dir="ltr">${safeActionUrl}</div>
               </td>
@@ -155,7 +155,7 @@ export function renderNotificationEmail(
             <tr>
               <td style="border-top:1px solid #e2e8f0;background:#f8fafc;padding:18px 28px;font-size:12px;line-height:19px;color:#64748b;text-align:left;" dir="ltr">
                 Need help? Email <a href="mailto:${JAS_EMAIL_BRAND.supportEmail}" style="color:#0f766e;font-weight:700;">${JAS_EMAIL_BRAND.supportEmail}</a>.<br>
-                This is an automated service email from Jatt Alliance Sindh. Do not reply with your password, CNIC, OTP, or payment PIN.
+                This is an automated service email from Jatt Welfare Alliance Sindh. Do not reply with your password, CNIC, OTP, or payment PIN.
               </td>
             </tr>
           </table>
@@ -174,7 +174,7 @@ export function renderNotificationEmail(
     '',
     message,
     '',
-    `Open JAS Member Portal: ${actionUrl}`,
+    `Open JWAS Member Portal: ${actionUrl}`,
     '',
     `Support: ${JAS_EMAIL_BRAND.supportEmail}`,
     'Never share your password, CNIC, OTP, or payment PIN by email.',

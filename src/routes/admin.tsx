@@ -1511,7 +1511,7 @@ function RecentAdminActivityCard({ rows }: { rows: AuditLogRow[] }) {
             Recent admin activity
           </h2>
           <p className="mt-1 text-sm leading-6 text-slate-500">
-            Latest sensitive actions recorded for JAS production review.
+            Latest sensitive actions recorded for JWAS production review.
           </p>
         </div>
 

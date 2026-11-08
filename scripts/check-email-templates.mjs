@@ -49,7 +49,7 @@ for (const [filename, variables] of Object.entries(requiredTemplates)) {
   const html = await readFile(path, 'utf8')
 
   if (info.size < 1000) failures.push(`${filename}: template is unexpectedly small`)
-  if (!html.includes('Jatt Alliance Sindh')) failures.push(`${filename}: missing official organization name`)
+  if (!html.includes('Jatt Welfare Alliance Sindh')) failures.push(`${filename}: missing official organization name`)
   if (!html.includes('support@jasofficial.org')) failures.push(`${filename}: missing official support email`)
   if (!html.includes('https://jasofficial.org')) failures.push(`${filename}: missing official website`)
 
@@ -91,5 +91,5 @@ if (failures.length) {
 }
 
 console.log(`Email templates verified: ${Object.keys(requiredTemplates).length}`)
-console.log('Brand: JAS — Jatt Alliance Sindh')
+console.log('Brand: JWAS — Jatt Welfare Alliance Sindh')
 console.log('Notification worker config: present')
