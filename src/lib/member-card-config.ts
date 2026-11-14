@@ -2,7 +2,7 @@ import { BRAND } from './branding'
 export const MEMBER_CARD_VERSION = 'v1'
 export const JAS_ORGANIZATION_NAME = BRAND.name
 export const JAS_ORGANIZATION_LOCATION = 'Sindh, Pakistan'
-export const DEFAULT_PUBLIC_SITE_ORIGIN = 'https://jasofficial.org'
+export const DEFAULT_PUBLIC_SITE_ORIGIN = 'https://jwas.app'
 
 export function normalizePublicSiteOrigin(value: string | null | undefined) {
   const normalized = String(value || DEFAULT_PUBLIC_SITE_ORIGIN).trim().replace(/\/+$/, '')

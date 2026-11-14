@@ -44,8 +44,8 @@ describe('notification helpers', () => {
   it.each([
     ['/dashboard', '/dashboard'],
     ['/verify/JAS-2026-0001?source=notification#card', '/verify/JAS-2026-0001?source=notification#card'],
-    ['https://jasofficial.org/dashboard', '/dashboard'],
-    [' https://jasofficial.org/programs/education ', '/programs/education'],
+    ['https://jwas.app/dashboard', '/dashboard'],
+    [' https://jwas.app/programs/education ', '/programs/education'],
   ])('allows safe same-origin action URL %s', (input, expected) => {
     expect(getSafeNotificationActionUrl(input)).toBe(expected)
   })
@@ -55,6 +55,9 @@ describe('notification helpers', () => {
     'data:text/html,bad',
     '//evil.example/path',
     'https://evil.example/path',
+    'https://jasofficial.org/dashboard',
+    ' https://jasofficial.org/programs/education ',
+    'https://jwas.app.evil.example/dashboard',
     'https:\\evil.example\\path',
     '/dashboard\njavascript:alert(1)',
   ])('blocks unsafe action URL %s', (input) => {
@@ -70,7 +73,7 @@ describe('notification helpers', () => {
     ).toBe('/dashboard')
     expect(
       getSafeNotificationActionUrl(
-        'https://jasofficial.org/dashboard',
+        'https://jwas.app/dashboard',
         'http://localhost:3000',
       ),
     ).toBeNull()

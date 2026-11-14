@@ -18,12 +18,70 @@ export const MEMBERSHIP_RECEIPT_ALLOWED_TYPES = [
 
 export const MEMBERSHIP_PAYMENT_QR_IMAGE_PATH = '/jas/membership-payment-qr.jpg'
 
-export const MEMBERSHIP_MANUAL_PAYMENT_DETAILS = {
-  bankName: 'Easypaisa',
-  accountTitle: 'Adil Sikandar',
-  accountNumber: '123456789',
-  iban: 'PK123456789',
-} as const
+/**
+ * No payment destination is trusted merely because it appears in source code.
+ * Values are public (VITE_); never put credentials, passwords or tokens here.
+ * The release operator MUST confirm the displayed account and QR with the
+ * organization before setting the two explicit verification flags.
+ */
+export type MembershipPaymentAccountConfig = {
+  verified?: string
+  network?: string
+  accountTitle?: string
+  accountNumber?: string
+  iban?: string
+}
+
+export type MembershipPaymentAccount = {
+  bankName: string
+  accountTitle: string
+  accountNumber: string
+  iban: string
+}
+
+function isValidPkIban(value: string): boolean {
+  if (!/^PK\d{2}[A-Z0-9]{20}$/.test(value)) return false
+  const moved = value.slice(4) + value.slice(0, 4)
+  let remainder = 0
+  for (const char of moved) {
+    const digits = char >= 'A' && char <= 'Z' ? String(char.charCodeAt(0) - 55) : char
+    for (const digit of digits) remainder = (remainder * 10 + Number(digit)) % 97
+  }
+  return remainder === 1
+}
+
+export function resolveMembershipPaymentAccount(config: MembershipPaymentAccountConfig): MembershipPaymentAccount | null {
+  if (config.verified !== 'true') return null
+  const bankName = config.network?.trim() ?? ''
+  const accountTitle = config.accountTitle?.trim() ?? ''
+  const accountNumber = (config.accountNumber ?? '').replace(/[\s-]/g, '')
+  const iban = (config.iban ?? '').replace(/\s/g, '').toUpperCase()
+
+  if (!bankName || bankName.length > 60 || !accountTitle || accountTitle.length > 100) return null
+  if (/^(test|example|your name|account holder|placeholder)$/i.test(accountTitle)) return null
+  if (!/^\d{10,24}$/.test(accountNumber) || /^(\d)\1+$/.test(accountNumber)) return null
+  if (accountNumber.includes('123456789') || accountNumber.includes('987654321')) return null
+  if (/easypaisa|jazzcash/i.test(bankName) && !/^03\d{9}$/.test(accountNumber)) return null
+  if (iban && !isValidPkIban(iban)) return null
+  return { bankName, accountTitle, accountNumber, iban }
+}
+
+export function isMembershipQrApproved(account: MembershipPaymentAccount | null, flag: string | undefined) {
+  return Boolean(account) && flag === 'true'
+}
+
+export const MEMBERSHIP_MANUAL_PAYMENT_DETAILS = resolveMembershipPaymentAccount({
+  verified: import.meta.env.VITE_MEMBERSHIP_PAYMENT_DETAILS_VERIFIED,
+  network: import.meta.env.VITE_MEMBERSHIP_PAYMENT_NETWORK,
+  accountTitle: import.meta.env.VITE_MEMBERSHIP_PAYMENT_ACCOUNT_TITLE,
+  accountNumber: import.meta.env.VITE_MEMBERSHIP_PAYMENT_ACCOUNT_NUMBER,
+  iban: import.meta.env.VITE_MEMBERSHIP_PAYMENT_IBAN,
+})
+
+export const MEMBERSHIP_PAYMENT_QR_APPROVED = isMembershipQrApproved(
+  MEMBERSHIP_MANUAL_PAYMENT_DETAILS,
+  import.meta.env.VITE_MEMBERSHIP_PAYMENT_QR_VERIFIED,
+)
 
 export type MembershipPaymentStatus =
   | 'pending'

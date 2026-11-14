@@ -38,6 +38,7 @@ RSYNC_EXCLUDES=(
   "--exclude=*.local"
   "--exclude=.git/"
   "--exclude=node_modules/"
+  "--exclude=.jas-design-backups/"
   "--exclude=.vercel/"
   "--exclude=.netlify/"
   "--exclude=.turbo/"
@@ -103,6 +104,7 @@ else
     --exclude='./.cache' \
     --exclude='./.turbo' \
     --exclude='./.netlify' \
+    --exclude='./.jas-design-backups' \
     --exclude='./.vercel' \
     --exclude='./.output' \
     --exclude='./dist' \
@@ -156,6 +158,7 @@ blocked_paths="$(find "$PROJECT_DIR" \
   -o -name '.cache' \
   -o -name '.turbo' \
   -o -name '.netlify' \
+  -o -name '.jas-design-backups' \
   -o -name '.vercel' \
   -o -name '.env.bak' \
   -o -name '.env.backup' \
@@ -206,4 +209,4 @@ bash scripts/check-safe-archive.sh "$ARCHIVE_PATH"
 
 bytes="$(wc -c < "$ARCHIVE_PATH" | tr -d ' ')"
 echo "Safe export created: $ARCHIVE_PATH (${bytes} bytes)"
-echo "Excluded: .env*, .git, node_modules, build output, Supabase temp/branches/snippets, platform state, backups, exports, logs, zips, Android packages/keys and certificate files"
+echo "Excluded: .env*, .git, node_modules, build output, Supabase temp/branches/snippets, platform state, design backups, backups, exports, logs, zips, Android packages/keys and certificate files"

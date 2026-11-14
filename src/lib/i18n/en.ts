@@ -373,6 +373,8 @@ export const en = {
     'register.payment.accountTitle': 'Account Title',
     'register.payment.accountNo': 'Account No',
     'register.payment.iban': 'IBAN',
+    'register.payment.detailsUnverified': 'Payment account details are not yet verified. Do not transfer funds using old or unofficial account numbers. Contact JWAS for confirmed instructions.',
+    'register.payment.qrUnverified': 'Payment QR is temporarily hidden until JWAS verifies that it matches the listed account.',
     'register.payment.network': 'Payment Network',
     'register.payment.tillId': 'Till ID',
     'register.payment.afterPayment': 'After payment, upload the receipt below to complete your membership application.',

@@ -375,6 +375,8 @@ export const sd = {
     'register.payment.accountTitle': 'اڪائونٽ ٽائٽل',
     'register.payment.accountNo': 'اڪائونٽ نمبر',
     'register.payment.iban': 'IBAN',
+    'register.payment.detailsUnverified': 'ادائيگي واري اڪائونٽ جي تفصيل اڃا تصديق ٿيل ناهي۔ پراڻن يا غير سرڪاري اڪائونٽ نمبرن تي رقم نه موڪليو۔ تصديق ٿيل هدايتن لاءِ JWAS سان رابطو ڪريو۔',
+    'register.payment.qrUnverified': 'QR ڪوڊ عارضي طور لڪايو ويو آهي جيستائين JWAS تصديق نه ڪري ته اهو ڏنل اڪائونٽ سان ٺهڪي اچي ٿو۔',
     'register.payment.network': 'ادائيگي نيٽ ورڪ',
     'register.payment.tillId': 'Till ID',
     'register.payment.afterPayment': 'ادائيگي کان پوءِ، ميمبرشپ درخواست مڪمل ڪرڻ لاءِ هيٺ رسيد اپ لوڊ ڪريو.',

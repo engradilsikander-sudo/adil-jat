@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-SITE_URL="${SITE_URL:-https://jasofficial.org}"
+SITE_URL="${SITE_URL:-https://jwas.app}"
 SKIP_BUILD="${SKIP_BUILD:-0}"
 
 green='\033[0;32m'
@@ -15,7 +15,7 @@ fail() { printf "%b\n" "${red}✗${reset} $1"; exit 1; }
 require_file() { [[ -f "$1" ]] || fail "Missing required file: $1"; log "Found $1"; }
 require_dir() { [[ -d "$1" ]] || fail "Missing required directory: $1"; log "Found $1"; }
 
-printf "\nJAS Production Readiness Verification\n"
+printf "\nJWAS Production Readiness Verification\n"
 printf "Site URL: %s\n\n" "$SITE_URL"
 
 require_file package.json
@@ -35,6 +35,14 @@ require_file scripts/check-env-safety.sh
 require_file scripts/check-lockfile-integrity.sh
 require_file scripts/safe-export.sh
 require_file scripts/check-safe-archive.sh
+require_file scripts/jwas-r62-production-gate.mjs
+# Release-blocking configuration check; set JWAS_PRODUCTION_ENV_FILE to a
+# locally exported production env snapshot, or provide variables in the shell.
+if [[ -n "${JWAS_PRODUCTION_ENV_FILE:-}" ]]; then
+  node scripts/jwas-r62-production-gate.mjs --env-file "$JWAS_PRODUCTION_ENV_FILE"
+else
+  node scripts/jwas-r62-production-gate.mjs
+fi
 
 # Fail early on local/client secret exposure and package-lock drift.
 bash scripts/check-env-safety.sh

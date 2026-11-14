@@ -375,6 +375,8 @@ export const ur = {
     'register.payment.accountTitle': 'اکاؤنٹ ٹائٹل',
     'register.payment.accountNo': 'اکاؤنٹ نمبر',
     'register.payment.iban': 'IBAN',
+    'register.payment.detailsUnverified': 'ادائیگی کے اکاؤنٹ کی تفصیلات ابھی تصدیق شدہ نہیں ہیں۔ پرانے یا غیر سرکاری اکاؤنٹ نمبروں پر رقم نہ بھیجیں۔ درست تفصیلات کے لیے JWAS سے رابطہ کریں۔',
+    'register.payment.qrUnverified': 'QR کوڈ عارضی طور پر چھپایا گیا ہے جب تک JWAS تصدیق نہ کرے کہ یہ درج اکاؤنٹ سے مطابقت رکھتا ہے۔',
     'register.payment.network': 'ادائیگی نیٹ ورک',
     'register.payment.tillId': 'Till ID',
     'register.payment.afterPayment': 'ادائیگی کے بعد، ممبرشپ درخواست مکمل کرنے کے لیے نیچے رسید اپ لوڈ کریں۔',

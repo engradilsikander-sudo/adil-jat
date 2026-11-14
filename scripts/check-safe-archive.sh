@@ -38,7 +38,7 @@ entries="$(unzip -Z1 "$ZIP_PATH")"
 
 # Path-level blocks. Keep this regex simple and portable: entries from unzip are
 # plain archive paths such as jas-app/.env.local or jas-app/supabase/.temp/...
-forbidden_entry_regex='(^|/)(\.env$|\.env\.(local|development|production|test|preview|staging|backup|bak)$|\.env\..*\.local$|\.env\.local\..*$|\.env-safety-backups(/|$)|\.git(/|$)|node_modules(/|$)|\.vercel(/|$)|\.netlify(/|$)|\.turbo(/|$)|\.cache(/|$)|coverage(/|$)|playwright-report(/|$)|test-results(/|$)|\.output(/|$)|dist(/|$)|dist-ssr(/|$)|\.tanstack(/|$)|\.nitro(/|$)|\.vinxi(/|$)|\.wrangler(/|$)|__unconfig[^/]*(/|$)|supabase/\.temp(/|$)|supabase/\.branches(/|$)|supabase/snippets(/|$)|backups(/|$)|exports(/|$)|.*\.log$|.*\.zip$|.*\.apk$|.*\.aab$|.*\.keystore$|.*\.pem$|.*\.key$|.*\.p12$|.*\.pfx$|.*\.crt$|.*\.csr$|.*\.mobileprovision$|signing-key-info\.txt$|\.DS_Store$)'
+forbidden_entry_regex='(^|/)(\.env$|\.env\.(local|development|production|test|preview|staging|backup|bak)$|\.env\..*\.local$|\.env\.local\..*$|\.env-safety-backups(/|$)|\.git(/|$)|node_modules(/|$)|\.jas-design-backups(/|$)||\.vercel(/|$)|\.netlify(/|$)|\.turbo(/|$)|\.cache(/|$)|coverage(/|$)|playwright-report(/|$)|test-results(/|$)|\.output(/|$)|dist(/|$)|dist-ssr(/|$)|\.tanstack(/|$)|\.nitro(/|$)|\.vinxi(/|$)|\.wrangler(/|$)|__unconfig[^/]*(/|$)|supabase/\.temp(/|$)|supabase/\.branches(/|$)|supabase/snippets(/|$)|backups(/|$)|exports(/|$)|.*\.log$|.*\.zip$|.*\.apk$|.*\.aab$|.*\.keystore$|.*\.pem$|.*\.key$|.*\.p12$|.*\.pfx$|.*\.crt$|.*\.csr$|.*\.mobileprovision$|signing-key-info\.txt$|\.DS_Store$)'
 
 matches="$(printf '%s\n' "$entries" | grep -E "$forbidden_entry_regex" || true)"
 
