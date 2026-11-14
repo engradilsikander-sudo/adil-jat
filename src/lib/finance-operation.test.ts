@@ -25,7 +25,15 @@ describe('R1.3 finance operation recovery keys', () => {
     await reserveFinanceRequest('decide:finance_donations:test:pending:approved', { id: 'test', amount: 42 })
     const content = [...values.values()].join(' ')
     expect(content).not.toContain('amount')
-    expect(content).not.toContain('42')
+    for (const serialized of values.values()) {
+      const record = JSON.parse(serialized) as Record<string, unknown>
+      expect(Object.keys(record).sort()).toEqual([
+        'createdAt',
+        'fingerprint',
+        'key',
+        'version',
+      ])
+    }
     expect(content).toContain('fingerprint')
   })
   it('fails closed on malformed and expired recovery records', async () => {
