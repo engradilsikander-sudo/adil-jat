@@ -5,7 +5,7 @@
  * real admin authorization, real payment recipient or actual bank QR payee.
  * Those still require separately authorized, read-only live acceptance.
  */
-import { expect, test, type Page } from '@playwright/test'
+import { expect, test, type Page, type Response } from '@playwright/test'
 import { installSyntheticSession, verifySyntheticSession } from './fixtures/mobile-session'
 
 test.use({ serviceWorkers: 'block' })
@@ -112,13 +112,85 @@ test('P2-A3: ordinary member cannot open an admin-only program page', async ({ p
   expect(state.requests.filter(line => line.includes('/rest/v1/program_applications?'))).toEqual([])
 })
 
+// Observe the existing fixture; never fulfill or relax its request contracts here.
+function waitForApiResponse(page: Page, pathname: string, method = 'GET', matches = (_url: URL) => true) {
+  return page.waitForResponse(response => {
+    const url = new URL(response.url())
+    return response.request().method() === method && url.pathname === pathname && matches(url)
+  })
+}
+
+async function expectCompletedJson(response: Response, expected: unknown) {
+  expect(await response.finished(), 'Mock response must finish without a network error').toBeNull()
+  expect(response.status()).toBe(200)
+  expect(await response.json()).toEqual(expected)
+  const url = new URL(response.url())
+  await test.info().attach('completed-api-response', {
+    body: JSON.stringify({ method: response.request().method(), pathname: url.pathname,
+      query: Object.fromEntries(url.searchParams), status: response.status(), body: expected }),
+    contentType: 'application/json',
+  })
+}
+
 test('P2-A4: synthetic Super Admin sees program console without mutating data', async ({ page, baseURL }) => {
   requireLocalOrigin(baseURL)
   await installReadOnlySession(page, { role: 'admin', language: 'en' })
+  // Register before navigation, including the unfiltered role lookup used by
+  // loadCurrentAdminAreaAccess (not the header's filtered navigation lookup).
+  const userResponse = waitForApiResponse(page, '/auth/v1/user')
+  const roleResponse = waitForApiResponse(page, '/rest/v1/user_roles', 'GET', url => !url.searchParams.has('role'))
+  const applicationResponse = waitForApiResponse(page, '/rest/v1/program_applications')
   await page.goto('/admin/programs/education')
+  const [user, roles, applications] = await Promise.all([userResponse, roleResponse, applicationResponse])
+  expect(await user.finished()).toBeNull()
+  expect(user.status()).toBe(200)
+  const identity = await user.json() as { id: string; role: string }
+  expect(identity.role).toBe('authenticated')
+  expect(Object.fromEntries(new URL(roles.url()).searchParams)).toEqual({ select: 'role', user_id: `eq.${identity.id}` })
+  await expectCompletedJson(roles, [{ role: 'super_admin' }])
+  const query = new URL(applications.url()).searchParams
+  expect(query.get('program_key')).toBe('eq.education')
+  expect(query.get('order')).toBe('created_at.desc,id.asc')
+  expect(query.get('offset')).toBe('0')
+  expect(query.get('limit')).toBe('500')
+  expect(applications.request().headers().prefer).toContain('count=exact')
+  expect(applications.headers()['content-range']).toBe('*/0')
+  await expectCompletedJson(applications, [])
+
+  const consolePage = page.locator('.admin-program-admin-page')
+  // This branch renders only after loading=false and message='', unlike the shell.
+  await expect(consolePage.getByRole('heading', { name: 'No education applications found', exact: true })).toBeVisible()
+  await expect(consolePage.getByRole('button', { name: 'Refresh', exact: true })).toBeEnabled()
+  await expect(consolePage.locator('.animate-spin')).toHaveCount(0)
+  await expect(consolePage.getByRole('heading', { name: 'Unable to load applications', exact: true })).toHaveCount(0)
   await expect(page.locator('.admin-sidebar')).toBeVisible()
   await expect(page.locator('.admin-filter-grid')).toBeVisible()
   await expect(page.locator('.admin-sidebar')).toContainText('JWAS Admin Panel')
+})
+
+test('P2-A4-r1-N1: completed member authorization denies education records', async ({ page, baseURL }) => {
+  requireLocalOrigin(baseURL)
+  const state = await installReadOnlySession(page, { role: 'member', language: 'en' })
+  const userResponse = waitForApiResponse(page, '/auth/v1/user')
+  const roleResponse = waitForApiResponse(page, '/rest/v1/user_roles', 'GET', url => !url.searchParams.has('role'))
+  const areaResponse = waitForApiResponse(page, '/rest/v1/rpc/get_my_area_permissions', 'POST')
+  await page.goto('/admin/programs/education')
+  const [user, roles, permissions] = await Promise.all([userResponse, roleResponse, areaResponse])
+  expect(await user.finished()).toBeNull()
+  expect(user.status()).toBe(200)
+  const identity = await user.json() as { id: string; role: string }
+  expect(identity.role).toBe('authenticated')
+  expect(Object.fromEntries(new URL(roles.url()).searchParams)).toEqual({ select: 'role', user_id: `eq.${identity.id}` })
+  await expectCompletedJson(roles, [])
+  await expectCompletedJson(permissions, [])
+
+  const consolePage = page.locator('.admin-program-admin-page')
+  await expect(consolePage.getByRole('heading', { name: 'Unable to load applications', exact: true })).toBeVisible()
+  await expect(consolePage.getByText('Education area access required.', { exact: true })).toBeVisible()
+  await expect(consolePage.getByRole('button', { name: 'Refresh', exact: true })).toBeEnabled()
+  await expect(consolePage.locator('.animate-spin')).toHaveCount(0)
+  await expect(consolePage.getByRole('heading', { name: 'No education applications found', exact: true })).toHaveCount(0)
+  expect(state.requests.filter(line => line.includes('/rest/v1/program_applications?'))).toEqual([])
 })
 
 test('P2-A5: new application shows approved PKR 500 Easypaisa details and QR, without submitting', async ({ page, baseURL }) => {
