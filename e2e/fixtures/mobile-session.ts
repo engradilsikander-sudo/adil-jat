@@ -71,7 +71,7 @@ const compact = (value: string) => value.replaceAll(' ', '')
 const preferenceKeys = ['web_push_enabled', 'membership_updates', 'program_updates', 'finance_updates', 'general_updates'] as const
 const notificationSelect = 'id,user_id,title,message,category,related_type,related_id,action_url,is_read,read_at,created_at'
 const preferenceSelect = 'user_id,web_push_enabled,membership_updates,program_updates,finance_updates,general_updates,created_at,updated_at'
-const memberSelects = ["full_name,member_no,status", "id,membership_fee_required,status,address,date_of_birth,gender,education,blood_group,emergency_contact_name,emergency_contact_relation,emergency_contact_mobile,declaration_accepted,full_name,father_name,cnic,mobile,district,taluka,profession,caste_branch,photo_url", "id,user_id,member_no,full_name,father_name,cnic,mobile,district,taluka,profession,caste_branch,photo_url,status,rejection_reason,approved_at,created_at,updated_at,address,date_of_birth,gender,education,blood_group,emergency_contact_name,emergency_contact_relation,emergency_contact_mobile,declaration_accepted", "id,user_id,member_no,status,full_name,father_name,cnic,mobile,district,taluka,profession,caste_branch,address,date_of_birth,gender,education,blood_group,emergency_contact_name,emergency_contact_relation,emergency_contact_mobile,photo_url,updated_at"]
+const memberSelects = ["id,member_no,full_name,father_name,cnic,mobile,district,taluka,profession,caste_branch,photo_url,status,approved_at,address,date_of_birth,gender,education,blood_group,emergency_contact_name,emergency_contact_relation,emergency_contact_mobile,declaration_accepted", "full_name,member_no,status", "id,membership_fee_required,status,address,date_of_birth,gender,education,blood_group,emergency_contact_name,emergency_contact_relation,emergency_contact_mobile,declaration_accepted,full_name,father_name,cnic,mobile,district,taluka,profession,caste_branch,photo_url", "id,user_id,member_no,full_name,father_name,cnic,mobile,district,taluka,profession,caste_branch,photo_url,status,rejection_reason,approved_at,created_at,updated_at,address,date_of_birth,gender,education,blood_group,emergency_contact_name,emergency_contact_relation,emergency_contact_mobile,declaration_accepted", "id,user_id,member_no,status,full_name,father_name,cnic,mobile,district,taluka,profession,caste_branch,address,date_of_birth,gender,education,blood_group,emergency_contact_name,emergency_contact_relation,emergency_contact_mobile,photo_url,updated_at"]
 
 // Fail closed: every API call is intercepted, including unknown endpoints. No call
 // carrying the synthetic JWT is allowed to fall through to a real backend.
@@ -125,6 +125,11 @@ export async function installSyntheticSession(page: Page, options: Options = {})
       if (url.pathname === '/rest/v1/rpc/current_user_can_manage_finance' && method === 'POST' && query({})) {
         expect(request.postDataJSON() ?? {}).toEqual({})
         await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(admin) }); return
+      }
+      // Read-only area scope lookup; no permission grants in this fixture.
+      if (url.pathname === '/rest/v1/rpc/get_my_area_permissions' && method === 'POST' && query({})) {
+        expect(request.postDataJSON() ?? {}).toEqual({})
+        await route.fulfill({ status: 200, contentType: 'application/json', body: '[]' }); return
       }
       // All other RPCs remain unexpected.
       if (url.pathname.startsWith('/rest/v1/rpc/')) throw new Error('No RPC is expected')
